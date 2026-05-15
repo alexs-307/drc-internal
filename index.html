@@ -141,111 +141,6 @@
     overflow: hidden;
   }
 
-  /* ===== TAB 1 — INSTAGRAM ===== */
-  .ig-hero {
-    display: flex;
-    align-items: center;
-    gap: 24px;
-    padding: 28px;
-  }
-  .ig-avatar {
-    width: 72px;
-    height: 72px;
-    border-radius: 50%;
-    background: linear-gradient(135deg, var(--blue), #7B2FFF);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-    overflow: hidden;
-  }
-  .ig-avatar img { width: 60px; height: 60px; object-fit: contain; }
-  .ig-info .handle {
-    font-weight: 700;
-    font-size: 1.1rem;
-  }
-  .ig-info .bio {
-    color: var(--text-muted);
-    font-size: 0.85rem;
-    margin-top: 2px;
-  }
-  .ig-stats {
-    display: flex;
-    gap: 20px;
-    margin-top: 12px;
-  }
-  .ig-stat-item {
-    text-align: center;
-  }
-  .ig-stat-item .num {
-    font-weight: 700;
-    font-size: 1rem;
-    color: var(--text);
-    display: block;
-  }
-  .ig-stat-item .lbl {
-    font-size: 0.72rem;
-    color: var(--text-muted);
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-  }
-  .ig-cta {
-    margin-left: auto;
-  }
-  .btn-primary {
-    background: var(--blue);
-    color: white;
-    padding: 10px 20px;
-    border-radius: var(--radius-sm);
-    font-size: 0.85rem;
-    font-weight: 600;
-    border: none;
-    cursor: pointer;
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    text-decoration: none;
-    transition: background 0.15s, transform 0.1s;
-  }
-  .btn-primary:hover { background: var(--blue-light); text-decoration: none; transform: translateY(-1px); }
-  .ig-divider { border: none; border-top: 1px solid var(--border); margin: 0 28px; }
-  .ig-posts-section { padding: 24px 28px 28px; }
-  .ig-posts-title { font-weight: 600; font-size: 0.85rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 16px; }
-  .ig-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 10px;
-  }
-  /* ===== INSTAGRAM POST PLACEHOLDER ===== */
-  .ig-post-slot {
-    aspect-ratio: 1;
-    background: var(--bg);
-    border: 2px dashed var(--border);
-    border-radius: var(--radius-sm);
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 6px;
-    color: var(--text-muted);
-    font-size: 0.75rem;
-    text-align: center;
-    cursor: pointer;
-    transition: border-color 0.15s, background 0.15s;
-    position: relative;
-    overflow: hidden;
-  }
-  .ig-post-slot:hover { border-color: var(--blue); background: var(--blue-faint); }
-  .ig-post-slot .plus { font-size: 1.5rem; line-height: 1; color: var(--border); }
-  .ig-post-slot.has-image { border-style: solid; border-color: var(--border); }
-  .ig-post-slot.has-image img { width: 100%; height: 100%; object-fit: cover; position: absolute; inset: 0; }
-  .ig-note {
-    margin-top: 12px;
-    font-size: 0.78rem;
-    color: var(--text-muted);
-    font-style: italic;
-  }
-
   /* ===== TAB 2 — CALENDRIER ===== */
   .countdown-banner {
     background: var(--blue);
@@ -577,8 +472,6 @@
     header { padding: 0 16px; }
     nav { padding: 0 8px; overflow-x: auto; }
     main { padding: 24px 16px 60px; }
-    .ig-hero { flex-wrap: wrap; }
-    .ig-cta { margin-left: 0; }
     .race-card { flex-wrap: wrap; }
     .race-actions { width: 100%; justify-content: flex-end; }
     .countdown-days .num { font-size: 1.8rem; }
