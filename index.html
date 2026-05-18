@@ -522,6 +522,51 @@
     opacity: 0.4;
   }
 
+  /* ===== TAB 4 — RESSOURCES ===== */
+  .resource-list {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+  .resource-card {
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+    box-shadow: var(--shadow);
+  }
+  .resource-head {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 18px;
+    border-bottom: 1px solid var(--border);
+  }
+  .resource-title {
+    font-family: var(--display);
+    font-weight: 600;
+    font-size: 1rem;
+    letter-spacing: -0.01em;
+    flex: 1;
+  }
+  .resource-meta {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+  }
+  .resource-actions {
+    display: flex;
+    gap: 8px;
+    margin-left: auto;
+  }
+  .resource-viewer {
+    width: 100%;
+    height: 75vh;
+    min-height: 480px;
+    border: 0;
+    display: block;
+    background: var(--bg);
+  }
+
   /* ===== RESPONSIVE ===== */
   @media (max-width: 600px) {
     header { padding: 0 16px; }
@@ -530,6 +575,9 @@
     .race-card { flex-wrap: wrap; }
     .race-actions { width: 100%; justify-content: flex-end; }
     .countdown-days .num { font-size: 1.8rem; }
+    .resource-viewer { height: 60vh; min-height: 360px; }
+    .resource-head { flex-wrap: wrap; }
+    .resource-actions { margin-left: 0; width: 100%; }
   }
 </style>
 </head>
@@ -550,6 +598,7 @@
   <button class="tab-btn" data-tab="instagram">📸 Instagram</button>
   <button class="tab-btn active" data-tab="calendar">🏁 Calendrier Courses</button>
   <button class="tab-btn" data-tab="sessions">💪 Entrainement</button>
+  <button class="tab-btn" data-tab="resources">📚 Ressources</button>
 </nav>
 
 <!-- ===== MAIN ===== -->
@@ -617,6 +666,46 @@
     <div class="sessions-count" id="sessions-count"></div>
     <div id="sessions-list"></div>
     <div class="no-results" id="no-results" style="display:none">Aucune séance ne correspond à votre recherche.</div>
+  </div>
+
+  <!-- ==============================
+       TAB 4 — RESSOURCES
+  ============================== -->
+  <div class="tab-panel" id="tab-resources">
+    <p class="section-title">Ressources</p>
+    <p class="section-desc">Documents internes du club. Cliquez sur « Ouvrir » pour afficher le PDF en plein écran.</p>
+
+    <div class="resource-list">
+
+      <div class="resource-card">
+        <div class="resource-head">
+          <div>
+            <div class="resource-title">VMA &amp; Seuil</div>
+            <div class="resource-meta">PDF · Allures de référence</div>
+          </div>
+          <div class="resource-actions">
+            <a class="btn-link" href="ressources/vma_seuil.pdf" target="_blank" rel="noopener">Ouvrir</a>
+            <a class="btn-link" href="ressources/vma_seuil.pdf" download>Télécharger</a>
+          </div>
+        </div>
+        <iframe class="resource-viewer" src="ressources/vma_seuil.pdf#view=FitH" title="VMA & Seuil" loading="lazy"></iframe>
+      </div>
+
+      <div class="resource-card">
+        <div class="resource-head">
+          <div>
+            <div class="resource-title">Renfo du coureur &amp; mobilité</div>
+            <div class="resource-meta">PDF · Renforcement &amp; exercices de mobilité</div>
+          </div>
+          <div class="resource-actions">
+            <a class="btn-link" href="ressources/renfo_du_coureur.pdf" target="_blank" rel="noopener">Ouvrir</a>
+            <a class="btn-link" href="ressources/renfo_du_coureur.pdf" download>Télécharger</a>
+          </div>
+        </div>
+        <iframe class="resource-viewer" src="ressources/renfo_du_coureur.pdf#view=FitH" title="Renfo du coureur & mobilité" loading="lazy"></iframe>
+      </div>
+
+    </div>
   </div>
 
 </main>
