@@ -558,6 +558,29 @@
     gap: 8px;
     margin-left: auto;
   }
+  .btn-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 34px;
+    height: 34px;
+    color: var(--blue);
+    border: 1px solid var(--blue);
+    border-radius: var(--radius-sm);
+    background: var(--white);
+    transition: background 0.15s, transform 0.1s;
+    flex-shrink: 0;
+  }
+  .btn-icon:hover {
+    background: var(--blue-faint);
+    text-decoration: none;
+  }
+  .btn-icon:active { transform: translateY(1px); }
+  .btn-icon svg {
+    width: 16px;
+    height: 16px;
+    display: block;
+  }
   .resource-viewer {
     width: 100%;
     height: 75vh;
@@ -684,11 +707,15 @@
             <div class="resource-meta">PDF · Allures de référence</div>
           </div>
           <div class="resource-actions">
-            <a class="btn-link" href="ressources/vma_seuil.pdf" target="_blank" rel="noopener">Ouvrir</a>
-            <a class="btn-link" href="ressources/vma_seuil.pdf" download>Télécharger</a>
+            <a class="btn-icon" href="ressources/vma_seuil.pdf" target="_blank" rel="noopener" title="Ouvrir" aria-label="Ouvrir">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4h6v6"/><path d="M10 14 20 4"/><path d="M19 13v6a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1h6"/></svg>
+            </a>
+            <a class="btn-icon" href="ressources/vma_seuil.pdf" download title="Télécharger" aria-label="Télécharger">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg>
+            </a>
           </div>
         </div>
-        <iframe class="resource-viewer" src="ressources/vma_seuil.pdf#view=FitH" title="VMA & Seuil" loading="lazy"></iframe>
+        <iframe class="resource-viewer" src="ressources/vma_seuil.pdf#view=FitH&amp;pagemode=none&amp;navpanes=0" title="VMA & Seuil" loading="lazy"></iframe>
       </div>
 
       <div class="resource-card">
@@ -698,11 +725,15 @@
             <div class="resource-meta">PDF · Renforcement &amp; exercices de mobilité</div>
           </div>
           <div class="resource-actions">
-            <a class="btn-link" href="ressources/renfo_du_coureur.pdf" target="_blank" rel="noopener">Ouvrir</a>
-            <a class="btn-link" href="ressources/renfo_du_coureur.pdf" download>Télécharger</a>
+            <a class="btn-icon" href="ressources/renfo_du_coureur.pdf" target="_blank" rel="noopener" title="Ouvrir" aria-label="Ouvrir">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4h6v6"/><path d="M10 14 20 4"/><path d="M19 13v6a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1h6"/></svg>
+            </a>
+            <a class="btn-icon" href="ressources/renfo_du_coureur.pdf" download title="Télécharger" aria-label="Télécharger">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg>
+            </a>
           </div>
         </div>
-        <iframe class="resource-viewer" src="ressources/renfo_du_coureur.pdf#view=FitH" title="Renfo du coureur & mobilité" loading="lazy"></iframe>
+        <iframe class="resource-viewer" src="ressources/renfo_du_coureur.pdf#view=FitH&amp;pagemode=none&amp;navpanes=0" title="Renfo du coureur & mobilité" loading="lazy"></iframe>
       </div>
 
     </div>
