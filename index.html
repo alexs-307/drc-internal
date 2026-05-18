@@ -54,13 +54,6 @@
     top: 0;
     z-index: 100;
   }
-  header::before {
-    content: "";
-    position: absolute;
-    inset: 0 0 auto 0;
-    height: 3px;
-    background: linear-gradient(90deg, var(--blue) 0 33.33%, #FFFFFF 33.33% 66.66%, #E63946 66.66%);
-  }
   .logo-img {
     height: 40px;
     width: 40px;
@@ -84,27 +77,10 @@
     color: var(--blue);
     font-size: 0.7rem;
     font-weight: 600;
-    padding: 4px 12px 4px 9px;
+    padding: 3px 10px;
     border-radius: 20px;
     letter-spacing: 0.04em;
     text-transform: uppercase;
-    display: inline-flex;
-    align-items: center;
-    gap: 7px;
-  }
-  .header-badge::before {
-    content: "";
-    width: 7px;
-    height: 7px;
-    border-radius: 50%;
-    background: var(--blue);
-    box-shadow: 0 0 0 0 rgba(0,30,255,0.55);
-    animation: pulse-dot 2s ease-out infinite;
-  }
-  @keyframes pulse-dot {
-    0%   { box-shadow: 0 0 0 0 rgba(0,30,255,0.55); }
-    70%  { box-shadow: 0 0 0 8px rgba(0,30,255,0); }
-    100% { box-shadow: 0 0 0 0 rgba(0,30,255,0); }
   }
 
   /* ===== NAV TABS ===== */
