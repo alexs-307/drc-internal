@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>DRC — Espace Interne</title>
 <meta name="robots" content="noindex, nofollow">
-<link href="https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
 <style>
   /* ===== VARIABLES ===== */
   :root {
@@ -14,14 +14,16 @@
     --blue-faint: #EEF0FF;
     --peach: #FFE1D2;
     --peach-dark: #E8C4AE;
-    --bg: #F6F6F6;
+    --bg: #F4F1EC;
+    --bg-grid: #ECE7DE;
     --white: #FFFFFF;
     --text: #0D0D0D;
     --text-muted: #5A5A5A;
-    --border: #E2E2E2;
+    --border: #E2DED6;
     --radius: 10px;
     --radius-sm: 6px;
     --shadow: 0 1px 3px rgba(0,0,0,0.08), 0 4px 16px rgba(0,30,255,0.06);
+    --display: 'Space Grotesk', 'Inter', system-ui, sans-serif;
   }
 
   /* ===== RESET & BASE ===== */
@@ -29,7 +31,9 @@
   html { font-size: 16px; }
   body {
     font-family: 'Inter', system-ui, -apple-system, sans-serif;
-    background: var(--bg);
+    background:
+      repeating-linear-gradient(135deg, transparent 0 28px, rgba(0,30,255,0.018) 28px 29px),
+      var(--bg);
     color: var(--text);
     min-height: 100vh;
     line-height: 1.6;
@@ -50,15 +54,23 @@
     top: 0;
     z-index: 100;
   }
+  header::before {
+    content: "";
+    position: absolute;
+    inset: 0 0 auto 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--blue) 0 33.33%, #FFFFFF 33.33% 66.66%, #E63946 66.66%);
+  }
   .logo-img {
     height: 40px;
     width: 40px;
     object-fit: contain;
   }
   .site-title {
+    font-family: var(--display);
     font-weight: 700;
-    font-size: 1rem;
-    letter-spacing: -0.01em;
+    font-size: 1.05rem;
+    letter-spacing: -0.02em;
     color: var(--text);
   }
   .site-subtitle {
@@ -72,41 +84,58 @@
     color: var(--blue);
     font-size: 0.7rem;
     font-weight: 600;
-    padding: 3px 10px;
+    padding: 4px 12px 4px 9px;
     border-radius: 20px;
     letter-spacing: 0.04em;
     text-transform: uppercase;
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+  }
+  .header-badge::before {
+    content: "";
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--blue);
+    box-shadow: 0 0 0 0 rgba(0,30,255,0.55);
+    animation: pulse-dot 2s ease-out infinite;
+  }
+  @keyframes pulse-dot {
+    0%   { box-shadow: 0 0 0 0 rgba(0,30,255,0.55); }
+    70%  { box-shadow: 0 0 0 8px rgba(0,30,255,0); }
+    100% { box-shadow: 0 0 0 0 rgba(0,30,255,0); }
   }
 
   /* ===== NAV TABS ===== */
   nav {
     background: var(--white);
     border-bottom: 1px solid var(--border);
-    padding: 0 32px;
+    padding: 10px 24px;
     display: flex;
-    gap: 0;
+    gap: 6px;
     position: sticky;
     top: 64px;
     z-index: 99;
   }
   .tab-btn {
-    background: none;
-    border: none;
-    border-bottom: 3px solid transparent;
-    padding: 14px 20px;
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 999px;
+    padding: 8px 16px;
     font-family: inherit;
     font-size: 0.875rem;
     font-weight: 500;
     color: var(--text-muted);
     cursor: pointer;
-    transition: color 0.15s, border-color 0.15s;
+    transition: color 0.15s, background 0.15s, border-color 0.15s;
     white-space: nowrap;
-    margin-bottom: -1px;
   }
-  .tab-btn:hover { color: var(--text); }
+  .tab-btn:hover { color: var(--text); background: var(--bg); }
   .tab-btn.active {
     color: var(--blue);
-    border-bottom-color: var(--blue);
+    background: var(--blue-faint);
+    border-color: rgba(0,30,255,0.18);
     font-weight: 600;
   }
 
@@ -121,10 +150,22 @@
 
   /* ===== SECTION TITLES ===== */
   .section-title {
-    font-size: 1.25rem;
+    font-family: var(--display);
+    font-size: 1.5rem;
     font-weight: 700;
     margin-bottom: 6px;
-    letter-spacing: -0.02em;
+    letter-spacing: -0.03em;
+  }
+  .section-title::after {
+    content: "";
+    display: inline-block;
+    width: 28px;
+    height: 3px;
+    background: var(--blue);
+    border-radius: 2px;
+    vertical-align: middle;
+    margin-left: 12px;
+    transform: translateY(-4px);
   }
   .section-desc {
     color: var(--text-muted);
@@ -143,7 +184,8 @@
 
   /* ===== TAB 2 — CALENDRIER ===== */
   .countdown-banner {
-    background: var(--blue);
+    background:
+      linear-gradient(135deg, var(--blue) 0%, #2540FF 55%, #4A5CFF 100%);
     color: white;
     border-radius: var(--radius);
     padding: 20px 24px;
@@ -151,6 +193,21 @@
     align-items: center;
     gap: 16px;
     margin-bottom: 24px;
+    position: relative;
+    overflow: hidden;
+  }
+  .countdown-banner::after {
+    content: "";
+    position: absolute;
+    inset: 0 0 0 auto;
+    width: 14px;
+    background-image:
+      repeating-linear-gradient(0deg, rgba(255,255,255,0.92) 0 7px, transparent 7px 14px),
+      repeating-linear-gradient(0deg, transparent 0 7px, rgba(255,255,255,0.92) 7px 14px);
+    background-size: 7px 14px, 7px 14px;
+    background-position: 0 0, 7px 0;
+    background-repeat: repeat-y;
+    opacity: 0.85;
   }
   .countdown-icon { font-size: 1.8rem; }
   .countdown-label { font-size: 0.8rem; opacity: 0.8; text-transform: uppercase; letter-spacing: 0.06em; }
@@ -158,12 +215,15 @@
   .countdown-days {
     margin-left: auto;
     text-align: center;
+    padding-right: 18px;
   }
   .countdown-days .num {
-    font-size: 2.5rem;
-    font-weight: 800;
+    font-family: var(--display);
+    font-size: 2.75rem;
+    font-weight: 700;
     line-height: 1;
     display: block;
+    letter-spacing: -0.04em;
   }
   .countdown-days .unit {
     font-size: 0.75rem;
@@ -192,7 +252,7 @@
     text-align: center;
     flex-shrink: 0;
   }
-  .race-date-col .day { font-size: 1.6rem; font-weight: 800; line-height: 1; color: var(--blue); }
+  .race-date-col .day { font-family: var(--display); font-size: 1.85rem; font-weight: 700; line-height: 1; color: var(--blue); letter-spacing: -0.04em; }
   .race-date-col .month { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-muted); font-weight: 600; }
   .race-date-col .year { font-size: 0.7rem; color: var(--text-muted); }
   .race-date-approx { font-size: 0.85rem; font-weight: 700; color: var(--text-muted); text-align: center; min-width: 80px; }
@@ -460,11 +520,30 @@
   /* ===== FOOTER ===== */
   footer {
     text-align: center;
-    padding: 16px 24px;
+    padding: 20px 24px;
     font-size: 0.75rem;
     color: var(--text-muted);
     border-top: 1px solid var(--border);
     background: var(--white);
+  }
+  .footer-marks {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+    font-family: var(--display);
+    font-weight: 600;
+    font-size: 0.68rem;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--blue);
+    margin-bottom: 8px;
+  }
+  .footer-marks .dash {
+    flex: 0 0 32px;
+    height: 1px;
+    background: currentColor;
+    opacity: 0.4;
   }
 
   /* ===== RESPONSIVE ===== */
@@ -567,6 +646,15 @@
 </main>
 
 <footer>
+  <div class="footer-marks">
+    <span class="dash"></span>
+    <span>Est. 2025</span>
+    <span>·</span>
+    <span>Paris</span>
+    <span>·</span>
+    <span>FFA</span>
+    <span class="dash"></span>
+  </div>
   Dérapage Running Club · Usage interne uniquement · <a href="https://www.instagram.com/derapagerunningclub/" target="_blank" rel="noopener">@derapage_rc</a>
 </footer>
 
