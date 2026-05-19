@@ -537,14 +537,16 @@
   .session-block-title.g3 { color: #7B2FFF; }
   .session-block-title.suggestion { color: #D97706; }
   .session-content {
-    font-size: 0.875rem;
-    line-height: 1.7;
+    font-family: var(--font-mono);
+    font-size: 0.82rem;
+    line-height: 1.65;
     color: var(--text);
     white-space: pre-line;
     background: var(--bg);
     border-radius: var(--radius-sm);
-    padding: 12px 14px;
+    padding: 14px 16px;
     border-left: 3px solid var(--border);
+    letter-spacing: 0.005em;
   }
   .session-content.g12 { border-left-color: var(--blue); }
   .session-content.g3 { border-left-color: #7B2FFF; }
@@ -671,7 +673,11 @@
   .page-sub {
     color: var(--graphite);
     margin: 0 0 32px;
-    font-size: 0.95rem;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    line-height: 1.5;
   }
 
   /* ============================================================
@@ -1046,18 +1052,19 @@
   }
   .album-hero-photo figcaption {
     position: absolute; bottom: 0; left: 0; right: 0;
-    padding: 20px;
+    padding: 16px 18px;
     color: var(--white);
     z-index: 1;
-    background: linear-gradient(180deg, transparent 0%, rgba(0,0,0,0.5) 100%);
+    background: linear-gradient(180deg, transparent 0%, rgba(0,0,0,0.35) 100%);
   }
   .album-hero-photo figcaption h2 {
     font-family: var(--font-sub);
     text-transform: uppercase;
-    font-size: 24px;
+    font-size: 16px;
     font-weight: 400;
-    margin: 0 0 6px;
-    letter-spacing: 0.02em;
+    margin: 0;
+    letter-spacing: 0.04em;
+    opacity: 0.9;
   }
   .album-hero-photo figcaption .meta {
     font-family: var(--font-mono);
@@ -1106,8 +1113,8 @@
   .album-grid-2 figcaption,
   .album-grid-wide figcaption {
     position: absolute; bottom: 0; left: 0; right: 0;
-    padding: 10px 12px;
-    background: linear-gradient(180deg, transparent, rgba(0,0,0,0.6));
+    padding: 8px 10px;
+    background: linear-gradient(180deg, transparent, rgba(0,0,0,0.4));
     color: var(--white);
     display: flex; flex-direction: column; gap: 2px;
   }
@@ -1123,8 +1130,9 @@
   .album-grid-wide figcaption .title {
     font-family: var(--font-sub);
     text-transform: uppercase;
-    font-size: 14px;
-    letter-spacing: 0.02em;
+    font-size: 11px;
+    letter-spacing: 0.04em;
+    opacity: 0.9;
   }
   .album-section { margin-top: 40px; }
   .album-section-head {
@@ -1167,8 +1175,8 @@
   }
   .album-mosaic figcaption {
     position: absolute; bottom: 0; left: 0; right: 0;
-    padding: 10px 12px;
-    background: linear-gradient(180deg, transparent, rgba(0,0,0,0.6));
+    padding: 8px 10px;
+    background: linear-gradient(180deg, transparent, rgba(0,0,0,0.4));
     color: var(--white);
     display: flex; flex-direction: column; gap: 2px;
   }
@@ -1182,8 +1190,9 @@
   .album-mosaic figcaption .title {
     font-family: var(--font-sub);
     text-transform: uppercase;
-    font-size: 16px;
-    letter-spacing: 0.02em;
+    font-size: 12px;
+    letter-spacing: 0.04em;
+    opacity: 0.9;
   }
   .album-footer {
     margin-top: 48px;
@@ -1380,42 +1389,37 @@
       <span class="line-1">Saison 01</span>
       <span class="line-2">l'album</span>
     </h1>
-    <p class="page-sub">Août 2025 → Juin 2026 · 36 séances, 9 courses, des verres chez Pinettes, un weekend loin de Paris.</p>
+    <p class="page-sub">2025–2026 · 40+ séances sur piste, des courses ou des OFF, des canons chez Pinettes, un trail dans le Cantal.</p>
     <p class="saison-est">EST. 2025 · PARIS · FFA</p>
 
     <!-- Hero feature -->
     <article class="album-hero">
       <figure class="album-hero-photo">
-        <img src="photos_saison_01/01-hero.jpg" alt="Drift Award — fête de Noël" loading="lazy" onerror="this.style.display='none'">
+        <img src="photos_saison_01/01-hero.jpg" alt="Drift Award — Olivier, pour l'ensemble de son œuvre" loading="lazy" onerror="this.style.display='none'">
         <figcaption>
-          <h2>Drift Award — fête de Noël</h2>
-          <span class="meta">12 déc 2025 · Photo by Marine</span>
+          <h2>Drift Award — Olivier, pour l'ensemble de son œuvre</h2>
         </figcaption>
       </figure>
       <aside class="album-hero-side">
-        <h3>Un moment, parmi beaucoup d'autres.</h3>
-        <p>Première soirée de remise des prix maison. Marathon de remerciements, t-shirts, fous rires à Pinettes. Le club avait six mois.</p>
+        <h3>10 mois d'existence : des souvenirs à la pelle.</h3>
         <div class="album-grid-2">
           <figure>
-            <img src="photos_saison_01/02-decouverte-club.jpg" alt="Découverte club" loading="lazy" onerror="this.style.display='none'">
+            <img src="photos_saison_01/02-decouverte-club.jpg" alt="DRC au feu rouge" loading="lazy" onerror="this.style.display='none'">
             <figcaption>
-              <span class="meta">02 sept 2025</span>
-              <span class="title">Découverte club</span>
+              <span class="title">DRC au feu rouge</span>
             </figcaption>
           </figure>
           <figure>
-            <img src="photos_saison_01/03-test-vma-1.jpg" alt="Test VMA #1" loading="lazy" onerror="this.style.display='none'">
+            <img src="photos_saison_01/03-test-vma-1.jpg" alt="Métronomes" loading="lazy" onerror="this.style.display='none'">
             <figcaption>
-              <span class="meta">14 oct 2025</span>
-              <span class="title">Test VMA #1</span>
+              <span class="title">Métronomes</span>
             </figcaption>
           </figure>
         </div>
         <figure class="album-grid-wide">
-          <img src="photos_saison_01/04-cantal-sortie-longue.jpg" alt="Sortie longue — Haut-Cantal" loading="lazy" onerror="this.style.display='none'">
+          <img src="photos_saison_01/04-cantal-sortie-longue.jpg" alt="Séance piste · seuil → VMA" loading="lazy" onerror="this.style.display='none'">
           <figcaption>
-            <span class="meta">04—06 avr 2026 · Cantal</span>
-            <span class="title">Sortie longue — Haut-Cantal</span>
+            <span class="title">Séance piste · seuil → VMA</span>
           </figcaption>
         </figure>
       </aside>
@@ -1424,25 +1428,24 @@
     <!-- Mosaïque printemps -->
     <div class="album-section">
       <div class="album-section-head">
-        <h3>Printemps 2026</h3>
-        <span class="album-section-meta">12 semaines · 4 courses pivot</span>
+        <h3>La course mais pas que</h3>
       </div>
       <div class="album-mosaic">
         <figure>
-          <img src="photos_saison_01/05-hybride-seuil-vma.jpg" alt="Hybride seuil → VMA" loading="lazy" onerror="this.style.display='none'">
-          <figcaption><span class="meta">17 mars 2026</span><span class="title">Hybride seuil → VMA</span></figcaption>
+          <img src="photos_saison_01/05-hybride-seuil-vma.jpg" alt="L'esprit du Drift" loading="lazy" onerror="this.style.display='none'">
+          <figcaption><span class="title">L'esprit du Drift</span></figcaption>
         </figure>
         <figure>
-          <img src="photos_saison_01/06-semi-paris.jpg" alt="Semi de Paris" loading="lazy" onerror="this.style.display='none'">
-          <figcaption><span class="meta">02 mars 2026</span><span class="title">Semi de Paris</span></figcaption>
+          <img src="photos_saison_01/06-semi-paris.jpg" alt="10K de Montmartre — finishers" loading="lazy" onerror="this.style.display='none'">
+          <figcaption><span class="title">10K de Montmartre — finishers</span></figcaption>
         </figure>
         <figure>
-          <img src="photos_saison_01/07-cycle-vma-piste.jpg" alt="Cycle VMA piste" loading="lazy" onerror="this.style.display='none'">
-          <figcaption><span class="meta">21 avr 2026</span><span class="title">Cycle VMA · piste</span></figcaption>
+          <img src="photos_saison_01/07-cycle-vma-piste.jpg" alt="Renfo collectif · piste" loading="lazy" onerror="this.style.display='none'">
+          <figcaption><span class="title">Renfo collectif · piste</span></figcaption>
         </figure>
         <figure>
-          <img src="photos_saison_01/08-cloture-cycle.jpg" alt="Clôture du cycle" loading="lazy" onerror="this.style.display='none'">
-          <figcaption><span class="meta">12 mai 2026</span><span class="title">Clôture du cycle</span></figcaption>
+          <img src="photos_saison_01/08-cloture-cycle.jpg" alt="Saison bouclée" loading="lazy" onerror="this.style.display='none'">
+          <figcaption><span class="title">Saison bouclée</span></figcaption>
         </figure>
       </div>
     </div>
@@ -1626,10 +1629,11 @@ const races = [
     monthDisplay: "Oct",
     yearDisplay: "2026",
     approx: false,
-    format: "Course à confirmer · vote en cours",
+    format: "Weekend long · vote en cours",
     note: "Deadline candidatures : 15 juin 2026",
     pillar: false,
-    confirmed: false
+    confirmed: false,
+    tbdType: "course"
   },
   {
     name: "Semi-marathon de Boulogne ⭐",
