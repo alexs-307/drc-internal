@@ -1,0 +1,233 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 980 1100" font-family="Inter, system-ui, sans-serif">
+<style>@import url("https://fonts.googleapis.com/css2?family=Anton&amp;family=Bebas+Neue&amp;family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500;600&amp;display=swap");</style>
+  <defs>
+    <linearGradient id="mobHero" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#001EFF"/>
+      <stop offset="100%" stop-color="#1438FF"/>
+    </linearGradient>
+    <pattern id="mobCheck" x="0" y="0" width="16" height="16" patternUnits="userSpaceOnUse">
+      <rect width="8" height="8" x="0" y="0" fill="#FFFFFF" fill-opacity="0.3"/>
+      <rect width="8" height="8" x="8" y="8" fill="#FFFFFF" fill-opacity="0.3"/>
+    </pattern>
+    <linearGradient id="duoMob" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#E6E0D3"/>
+      <stop offset="100%" stop-color="#001EFF"/>
+    </linearGradient>
+    <linearGradient id="duoMobDark" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#001EFF"/>
+      <stop offset="100%" stop-color="#0D0D0D"/>
+    </linearGradient>
+    <linearGradient id="fadeBottom" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#F4F1EC" stop-opacity="0"/>
+      <stop offset="100%" stop-color="#F4F1EC" stop-opacity="1"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="980" height="1100" fill="#F4F1EC"/>
+
+  <!-- =========================== TITLE =========================== -->
+  <g transform="translate(40, 36)">
+    <text font-family="Bebas Neue, Impact, sans-serif" font-size="32" fill="#0D0D0D" letter-spacing="0">MOBILE &#8212; 390 PX</text>
+    <text x="0" y="22" font-family="JetBrains Mono, monospace" font-size="11" font-weight="600" fill="#001EFF" letter-spacing="1.5">MOCK 04 · DEUX VUES C&#212;TE &#192; C&#212;TE</text>
+  </g>
+
+  <!-- =========================== PHONE 1 : CALENDRIER =========================== -->
+  <g transform="translate(40, 110)">
+    <!-- Device shell -->
+    <rect x="-12" y="-12" width="414" height="892" fill="#0D0D0D" rx="44"/>
+    <rect x="-6" y="-6" width="402" height="880" fill="#F4F1EC" rx="40"/>
+    <!-- Notch -->
+    <rect x="160" y="-6" width="80" height="20" fill="#0D0D0D" rx="0"/>
+
+    <!-- Phone content: 390x844 viewport -->
+    <svg x="0" y="20" width="390" height="844">
+      <rect width="390" height="844" fill="#F4F1EC"/>
+
+      <!-- Header -->
+      <g transform="translate(16, 24)">
+        <circle cx="14" cy="14" r="14" fill="#001EFF"/>
+        <text x="14" y="22" text-anchor="middle" fill="#FFFFFF" font-family="Anton, Impact, sans-serif" font-size="18">D</text>
+        <text x="36" y="12" font-family="Anton, Impact, sans-serif" font-size="18" fill="#0D0D0D" letter-spacing="-0.3">D&#201;RAPAGE</text>
+        <text x="36" y="24" font-family="Anton, Impact, sans-serif" font-size="10" fill="#001EFF" letter-spacing="1.4">RUNNING CLUB</text>
+      </g>
+
+      <!-- Nav scroll -->
+      <line x1="0" y1="72" x2="390" y2="72" stroke="#E6E0D3"/>
+      <g transform="translate(0, 96)">
+        <g transform="translate(16, 0)">
+          <rect x="-1" y="-9" width="14" height="14" fill="none" stroke="#0D0D0D" stroke-width="1.2" rx="1"/>
+          <circle cx="6" cy="-2" r="3" fill="none" stroke="#0D0D0D" stroke-width="1.2"/>
+          <text x="20" y="2" font-family="JetBrains Mono, monospace" font-size="10" font-weight="600" fill="#0D0D0D" letter-spacing="1.2">SAISON 01</text>
+        </g>
+        <g transform="translate(116, 0)">
+          <g stroke="#001EFF" stroke-width="1.2" fill="none">
+            <line x1="0" y1="-9" x2="0" y2="5"/>
+            <path d="M0 -8 L12 -8 L12 0 L0 0 Z"/>
+            <line x1="3" y1="-8" x2="3" y2="0" stroke-width="0.4"/>
+            <line x1="6" y1="-8" x2="6" y2="0" stroke-width="0.4"/>
+            <line x1="9" y1="-8" x2="9" y2="0" stroke-width="0.4"/>
+          </g>
+          <text x="20" y="2" font-family="JetBrains Mono, monospace" font-size="10" font-weight="600" fill="#001EFF" letter-spacing="1.2">CALENDRIER</text>
+          <line x1="-6" y1="16" x2="96" y2="16" stroke="#001EFF" stroke-width="2"/>
+        </g>
+        <g transform="translate(230, 0)">
+          <g stroke="#0D0D0D" stroke-width="1.2" fill="none">
+            <circle cx="7" cy="-2" r="6"/>
+            <line x1="7" y1="-10" x2="7" y2="-7"/>
+          </g>
+          <text x="20" y="2" font-family="JetBrains Mono, monospace" font-size="10" font-weight="600" fill="#0D0D0D" letter-spacing="1.2">ENTRA&#206;N.</text>
+        </g>
+        <g transform="translate(330, 0)">
+          <g stroke="#0D0D0D" stroke-width="1.2" fill="none">
+            <path d="M0 -10 L8 -10 L12 -6 L12 4 L0 4 Z"/>
+          </g>
+          <text x="20" y="2" font-family="JetBrains Mono, monospace" font-size="10" font-weight="600" fill="#0D0D0D" letter-spacing="1.2">RES&#8230;</text>
+        </g>
+        <!-- Right fade hint of scroll -->
+        <rect x="360" y="-20" width="30" height="40" fill="url(#fadeBottom)" transform="rotate(-90 360 0)"/>
+      </g>
+
+      <!-- Page title -->
+      <g transform="translate(16, 160)">
+        <text font-family="Bebas Neue, Impact, sans-serif" font-size="44" fill="#0D0D0D" letter-spacing="-0.5">2026—2027</text>
+        <text x="0" y="38" font-family="Bebas Neue, Impact, sans-serif" font-size="44" fill="#001EFF" letter-spacing="-0.5">EN COURSES</text>
+      </g>
+
+      <!-- Hero card (stacked) -->
+      <g transform="translate(16, 268)">
+        <rect width="358" height="200" fill="url(#mobHero)" rx="12"/>
+        <rect x="324" y="0" width="34" height="200" fill="url(#mobCheck)"/>
+        <text x="20" y="32" font-family="JetBrains Mono, monospace" font-size="9" font-weight="600" fill="#FFFFFF" opacity="0.7" letter-spacing="1.8">PROCHAINE COURSE</text>
+        <text x="20" y="64" font-family="Bebas Neue, Impact, sans-serif" font-size="26" fill="#FFFFFF" letter-spacing="-0.3">WEEKEND DE RENTR&#201;E</text>
+        <text x="20" y="84" font-family="JetBrains Mono, monospace" font-size="10" font-weight="600" fill="#FFFFFF" opacity="0.8" letter-spacing="1.4">24—25 OCT 2026 &#183; FORMAT WE LONG</text>
+        <!-- Big countdown stacked under -->
+        <text x="20" y="170" font-family="Anton, Impact, sans-serif" font-size="80" fill="#FFFFFF" letter-spacing="-1">159</text>
+        <text x="190" y="170" font-family="JetBrains Mono, monospace" font-size="11" font-weight="600" fill="#FFFFFF" opacity="0.7" letter-spacing="2">JOURS</text>
+      </g>
+
+      <!-- Race card 1 (highlighted) -->
+      <g transform="translate(16, 492)">
+        <rect width="358" height="100" fill="#FFFFFF" rx="8"/>
+        <rect width="4" height="100" fill="#001EFF" rx="2"/>
+        <rect x="4" width="354" height="100" fill="#EEF0FF" opacity="0.4" rx="8"/>
+        <text x="20" y="30" font-family="JetBrains Mono, monospace" font-size="10" font-weight="600" fill="#5B5B5B" letter-spacing="1.5">OCT 2026</text>
+        <text x="20" y="56" font-family="Anton, Impact, sans-serif" font-size="28" fill="#0D0D0D" letter-spacing="-0.5">24-25</text>
+        <text x="20" y="84" font-family="Bebas Neue, Impact, sans-serif" font-size="16" fill="#0D0D0D" letter-spacing="0">WEEKEND DE RENTR&#201;E</text>
+        <!-- Tag -->
+        <rect x="240" y="42" width="100" height="20" fill="none" stroke="#0D0D0D" stroke-width="1" rx="4"/>
+        <text x="290" y="55" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="9" font-weight="600" fill="#0D0D0D" letter-spacing="1">&#192; CONFIRMER</text>
+      </g>
+
+      <!-- Race card 2 -->
+      <g transform="translate(16, 612)">
+        <rect width="358" height="100" fill="#FFFFFF" rx="8"/>
+        <rect width="4" height="100" fill="#001EFF" rx="2"/>
+        <text x="20" y="30" font-family="JetBrains Mono, monospace" font-size="10" font-weight="600" fill="#5B5B5B" letter-spacing="1.5">MI-NOV. 2026</text>
+        <text x="20" y="58" font-family="Bebas Neue, Impact, sans-serif" font-size="20" fill="#0D0D0D" letter-spacing="0">SEMI DE BOULOGNE</text>
+        <rect x="20" y="68" width="48" height="18" fill="#EEF0FF" rx="4"/>
+        <text x="28" y="80" font-family="JetBrains Mono, monospace" font-size="9" font-weight="600" fill="#001EFF" letter-spacing="0.8">21,1 KM</text>
+        <rect x="76" y="68" width="44" height="18" fill="#001EFF" rx="4"/>
+        <text x="84" y="80" font-family="JetBrains Mono, monospace" font-size="9" font-weight="600" fill="#FFFFFF" letter-spacing="0.8">PILIER</text>
+        <rect x="240" y="42" width="100" height="20" fill="none" stroke="#0D0D0D" stroke-width="1" rx="4"/>
+        <text x="290" y="55" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="9" font-weight="600" fill="#0D0D0D" letter-spacing="1">&#192; CONFIRMER</text>
+      </g>
+
+      <!-- Race card 3 -->
+      <g transform="translate(16, 732)">
+        <rect width="358" height="80" fill="#FFFFFF" rx="8"/>
+        <text x="20" y="26" font-family="JetBrains Mono, monospace" font-size="10" font-weight="600" fill="#5B5B5B" letter-spacing="1.5">D&#201;C 2026</text>
+        <text x="20" y="54" font-family="Anton, Impact, sans-serif" font-size="22" fill="#0D0D0D" letter-spacing="-0.5">06</text>
+        <text x="60" y="50" font-family="Bebas Neue, Impact, sans-serif" font-size="20" fill="#0D0D0D" letter-spacing="0">10K TOUR EIFFEL</text>
+        <rect x="240" y="32" width="100" height="20" fill="#0D0D0D" rx="4"/>
+        <text x="290" y="45" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="9" font-weight="600" fill="#FFFFFF" letter-spacing="1">CONFIRM&#201;E</text>
+      </g>
+    </svg>
+
+    <!-- Label below -->
+    <text x="195" y="916" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="10" font-weight="600" fill="#5B5B5B" letter-spacing="1.5">CALENDRIER</text>
+  </g>
+
+  <!-- =========================== PHONE 2 : SAISON 01 =========================== -->
+  <g transform="translate(530, 110)">
+    <rect x="-12" y="-12" width="414" height="892" fill="#0D0D0D" rx="44"/>
+    <rect x="-6" y="-6" width="402" height="880" fill="#F4F1EC" rx="40"/>
+    <rect x="160" y="-6" width="80" height="20" fill="#0D0D0D"/>
+
+    <svg x="0" y="20" width="390" height="844">
+      <rect width="390" height="844" fill="#F4F1EC"/>
+
+      <!-- Header -->
+      <g transform="translate(16, 24)">
+        <circle cx="14" cy="14" r="14" fill="#001EFF"/>
+        <text x="14" y="22" text-anchor="middle" fill="#FFFFFF" font-family="Anton, Impact, sans-serif" font-size="18">D</text>
+        <text x="36" y="12" font-family="Anton, Impact, sans-serif" font-size="18" fill="#0D0D0D" letter-spacing="-0.3">D&#201;RAPAGE</text>
+        <text x="36" y="24" font-family="Anton, Impact, sans-serif" font-size="10" fill="#001EFF" letter-spacing="1.4">RUNNING CLUB</text>
+      </g>
+
+      <line x1="0" y1="72" x2="390" y2="72" stroke="#E6E0D3"/>
+
+      <!-- Nav scroll with Saison 01 active -->
+      <g transform="translate(0, 96)">
+        <g transform="translate(16, 0)">
+          <rect x="-1" y="-9" width="14" height="14" fill="none" stroke="#001EFF" stroke-width="1.2" rx="1"/>
+          <circle cx="6" cy="-2" r="3" fill="none" stroke="#001EFF" stroke-width="1.2"/>
+          <text x="20" y="2" font-family="JetBrains Mono, monospace" font-size="10" font-weight="600" fill="#001EFF" letter-spacing="1.2">SAISON 01</text>
+          <line x1="-6" y1="16" x2="90" y2="16" stroke="#001EFF" stroke-width="2"/>
+        </g>
+        <g transform="translate(116, 0)">
+          <g stroke="#0D0D0D" stroke-width="1.2" fill="none">
+            <line x1="0" y1="-9" x2="0" y2="5"/>
+            <path d="M0 -8 L12 -8 L12 0 L0 0 Z"/>
+          </g>
+          <text x="20" y="2" font-family="JetBrains Mono, monospace" font-size="10" font-weight="600" fill="#0D0D0D" letter-spacing="1.2">CALENDRIER</text>
+        </g>
+        <g transform="translate(230, 0)">
+          <g stroke="#0D0D0D" stroke-width="1.2" fill="none">
+            <circle cx="7" cy="-2" r="6"/>
+          </g>
+          <text x="20" y="2" font-family="JetBrains Mono, monospace" font-size="10" font-weight="600" fill="#0D0D0D" letter-spacing="1.2">ENTRA&#206;N.</text>
+        </g>
+      </g>
+
+      <!-- Page title -->
+      <g transform="translate(16, 160)">
+        <text font-family="Bebas Neue, Impact, sans-serif" font-size="56" fill="#0D0D0D" letter-spacing="-1">SAISON 01</text>
+        <text x="0" y="48" font-family="Bebas Neue, Impact, sans-serif" font-size="56" fill="#001EFF" letter-spacing="-1">L'ALBUM</text>
+        <text x="0" y="78" font-family="Inter, sans-serif" font-size="13" fill="#5B5B5B">36 s&#233;ances · 9 courses · Cantal &#183; Pinettes</text>
+      </g>
+
+      <!-- Hero feature stacked -->
+      <g transform="translate(16, 320)">
+        <rect width="358" height="220" fill="url(#duoMobDark)" rx="8"/>
+        <text x="16" y="32" font-family="JetBrains Mono, monospace" font-size="9" font-weight="600" fill="#FFFFFF" opacity="0.5" letter-spacing="1.5">12 D&#201;C 2025</text>
+        <g transform="translate(180, 120)" opacity="0.2">
+          <ellipse cx="0" cy="-40" rx="14" ry="16" fill="#FFFFFF"/>
+          <path d="M-8 -24 L-20 20 M8 -24 L20 20 M0 -24 L0 40" stroke="#FFFFFF" stroke-width="10" fill="none" stroke-linecap="round"/>
+        </g>
+        <rect y="184" width="358" height="36" fill="#001EFF"/>
+        <text x="16" y="206" font-family="Bebas Neue, Impact, sans-serif" font-size="16" fill="#FFFFFF" letter-spacing="0">DRIFT AWARD &#8212; F&#202;TE DE NO&#203;L</text>
+      </g>
+
+      <!-- Mosaic 2-up -->
+      <g transform="translate(16, 564)">
+        <rect width="170" height="170" fill="url(#duoMob)" rx="4"/>
+        <text x="10" y="20" font-family="JetBrains Mono, monospace" font-size="8" font-weight="600" fill="#0D0D0D" opacity="0.7" letter-spacing="1.2">02 SEPT 2025</text>
+        <text x="10" y="160" font-family="Bebas Neue, Impact, sans-serif" font-size="14" fill="#FFFFFF" letter-spacing="0">D&#201;COUVERTE</text>
+
+        <rect x="188" width="170" height="170" fill="url(#duoMobDark)" rx="4"/>
+        <text x="198" y="20" font-family="JetBrains Mono, monospace" font-size="8" font-weight="600" fill="#FFFFFF" opacity="0.6" letter-spacing="1.2">04 AVR 2026</text>
+        <text x="198" y="160" font-family="Bebas Neue, Impact, sans-serif" font-size="14" fill="#FFFFFF" letter-spacing="0">CANTAL</text>
+      </g>
+    </svg>
+
+    <text x="195" y="916" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="10" font-weight="600" fill="#5B5B5B" letter-spacing="1.5">SAISON 01</text>
+  </g>
+
+  <!-- =========================== NOTES =========================== -->
+  <g transform="translate(40, 1024)">
+    <text font-family="Bebas Neue, Impact, sans-serif" font-size="18" fill="#0D0D0D" letter-spacing="0">PRINCIPES MOBILE</text>
+    <text x="0" y="22" font-family="Inter, sans-serif" font-size="13" fill="#5B5B5B">&#8226; Nav en scroll horizontal · cibles tactiles 44 px min · pas de hamburger menu</text>
+    <text x="0" y="40" font-family="Inter, sans-serif" font-size="13" fill="#5B5B5B">&#8226; Hero countdown empil&#233; (jours sous le titre) plut&#244;t qu'&#224; c&#244;t&#233;</text>
+    <text x="0" y="58" font-family="Inter, sans-serif" font-size="13" fill="#5B5B5B">&#8226; Date-block des cartes course : mois au-dessus, jour au centre (ne se replie pas &#224; gauche)</text>
+  </g>
+</svg>
