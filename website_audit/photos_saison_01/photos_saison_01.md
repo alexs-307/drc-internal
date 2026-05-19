@@ -85,7 +85,27 @@
 
 ## Checklist pour Alex
 
-- [ ] Déposer les 8 photos dans ce dossier avec les filenames indiqués
-- [ ] Compléter les captions et dates ci-dessus si besoin de précision
+- [x] Déposer les 8 photos dans ce dossier avec les filenames indiqués
+- [x] Compléter les captions et dates ci-dessus si besoin de précision
 - [ ] Valider les crédits photo (qui a shooté quoi)
 - [ ] Signaler au dev si on ajoute des emplacements supplémentaires
+
+---
+
+## Mapping intégré sur le site (PR `add-photos-saison-01`)
+
+Les 8 photos livrées par Alex ne portaient pas les filenames de la spec. Voici la correspondance source → emplacement, avec les captions/dates effectivement utilisées dans `index.html`.
+
+| Slot | Fichier source | Renommé en | Caption finale | Date affichée |
+|---|---|---|---|---|
+| 01 | `drift_award.jpeg` | `01-hero.jpg` | DRIFT AWARD · Fête de Noël | 12 déc 2025 |
+| 02 | `drc_sticker_lifestyle.jpeg` | `02-decouverte-club.jpg` | DRC au feu rouge | 02 sept 2025 |
+| 03 | `drc_watch_turnoff_post_run.jpeg` | `03-test-vma-1.jpg` | Récup post-effort | 14 oct 2025 |
+| 04 | `drc_after_race.jpg` | `04-cantal-sortie-longue.jpg` | L'esprit du Drift | 04 avr 2026 · Montmartre |
+| 05 | `drc_track.jpeg` | `05-hybride-seuil-vma.jpg` | Séance piste · seuil → VMA | 17 mars 2026 |
+| 06 | `drc_medal_holders.jpg` | `06-semi-paris.jpg` | 10K de Montmartre — finishers | 02 mars 2026 |
+| 07 | `drc_cross_training.jpeg` | `07-cycle-vma-piste.jpg` | Renfo collectif · piste | 21 avr 2026 |
+| 08 | `drc_sticker_phone_lifestyle.jpeg` | `08-cloture-cycle.jpg` | Saison bouclée | 12 mai 2026 |
+
+> Les filenames cibles (`01-hero.jpg`, etc.) ont été conservés tels que référencés dans `index.html` pour ne pas toucher les `<img src>`. Seuls les `<figcaption>` et `alt` ont été mis à jour.
+> Note : la date du slot 06 est restée `02 mars 2026` (héritée de la spec Semi de Paris) — à corriger si le 10K de Montmartre a eu lieu à une autre date.
