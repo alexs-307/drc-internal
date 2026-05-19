@@ -1052,18 +1052,19 @@
   }
   .album-hero-photo figcaption {
     position: absolute; bottom: 0; left: 0; right: 0;
-    padding: 20px;
+    padding: 16px 18px;
     color: var(--white);
     z-index: 1;
-    background: linear-gradient(180deg, transparent 0%, rgba(0,0,0,0.5) 100%);
+    background: linear-gradient(180deg, transparent 0%, rgba(0,0,0,0.35) 100%);
   }
   .album-hero-photo figcaption h2 {
     font-family: var(--font-sub);
     text-transform: uppercase;
-    font-size: 24px;
+    font-size: 16px;
     font-weight: 400;
-    margin: 0 0 6px;
-    letter-spacing: 0.02em;
+    margin: 0;
+    letter-spacing: 0.04em;
+    opacity: 0.9;
   }
   .album-hero-photo figcaption .meta {
     font-family: var(--font-mono);
@@ -1112,8 +1113,8 @@
   .album-grid-2 figcaption,
   .album-grid-wide figcaption {
     position: absolute; bottom: 0; left: 0; right: 0;
-    padding: 10px 12px;
-    background: linear-gradient(180deg, transparent, rgba(0,0,0,0.6));
+    padding: 8px 10px;
+    background: linear-gradient(180deg, transparent, rgba(0,0,0,0.4));
     color: var(--white);
     display: flex; flex-direction: column; gap: 2px;
   }
@@ -1129,8 +1130,9 @@
   .album-grid-wide figcaption .title {
     font-family: var(--font-sub);
     text-transform: uppercase;
-    font-size: 14px;
-    letter-spacing: 0.02em;
+    font-size: 11px;
+    letter-spacing: 0.04em;
+    opacity: 0.9;
   }
   .album-section { margin-top: 40px; }
   .album-section-head {
@@ -1173,8 +1175,8 @@
   }
   .album-mosaic figcaption {
     position: absolute; bottom: 0; left: 0; right: 0;
-    padding: 10px 12px;
-    background: linear-gradient(180deg, transparent, rgba(0,0,0,0.6));
+    padding: 8px 10px;
+    background: linear-gradient(180deg, transparent, rgba(0,0,0,0.4));
     color: var(--white);
     display: flex; flex-direction: column; gap: 2px;
   }
@@ -1188,8 +1190,9 @@
   .album-mosaic figcaption .title {
     font-family: var(--font-sub);
     text-transform: uppercase;
-    font-size: 16px;
-    letter-spacing: 0.02em;
+    font-size: 12px;
+    letter-spacing: 0.04em;
+    opacity: 0.9;
   }
   .album-footer {
     margin-top: 48px;
@@ -1395,7 +1398,6 @@
         <img src="photos_saison_01/01-hero.jpg" alt="Drift Award — Olivier, pour l'ensemble de son œuvre" loading="lazy" onerror="this.style.display='none'">
         <figcaption>
           <h2>Drift Award — Olivier, pour l'ensemble de son œuvre</h2>
-          <span class="meta">12 déc 2025</span>
         </figcaption>
       </figure>
       <aside class="album-hero-side">
@@ -1404,14 +1406,12 @@
           <figure>
             <img src="photos_saison_01/02-decouverte-club.jpg" alt="DRC au feu rouge" loading="lazy" onerror="this.style.display='none'">
             <figcaption>
-              <span class="meta">02 sept 2025</span>
               <span class="title">DRC au feu rouge</span>
             </figcaption>
           </figure>
           <figure>
             <img src="photos_saison_01/03-test-vma-1.jpg" alt="Métronomes" loading="lazy" onerror="this.style.display='none'">
             <figcaption>
-              <span class="meta">14 oct 2025</span>
               <span class="title">Métronomes</span>
             </figcaption>
           </figure>
@@ -1419,7 +1419,6 @@
         <figure class="album-grid-wide">
           <img src="photos_saison_01/04-cantal-sortie-longue.jpg" alt="Séance piste · seuil → VMA" loading="lazy" onerror="this.style.display='none'">
           <figcaption>
-            <span class="meta">17 mars 2026 · Bertrand Dauvin</span>
             <span class="title">Séance piste · seuil → VMA</span>
           </figcaption>
         </figure>
@@ -1434,19 +1433,19 @@
       <div class="album-mosaic">
         <figure>
           <img src="photos_saison_01/05-hybride-seuil-vma.jpg" alt="L'esprit du Drift" loading="lazy" onerror="this.style.display='none'">
-          <figcaption><span class="meta">04 avr 2026 · Montmartre</span><span class="title">L'esprit du Drift</span></figcaption>
+          <figcaption><span class="title">L'esprit du Drift</span></figcaption>
         </figure>
         <figure>
           <img src="photos_saison_01/06-semi-paris.jpg" alt="10K de Montmartre — finishers" loading="lazy" onerror="this.style.display='none'">
-          <figcaption><span class="meta">18 jan 2026</span><span class="title">10K de Montmartre — finishers</span></figcaption>
+          <figcaption><span class="title">10K de Montmartre — finishers</span></figcaption>
         </figure>
         <figure>
           <img src="photos_saison_01/07-cycle-vma-piste.jpg" alt="Renfo collectif · piste" loading="lazy" onerror="this.style.display='none'">
-          <figcaption><span class="meta">21 avr 2026</span><span class="title">Renfo collectif · piste</span></figcaption>
+          <figcaption><span class="title">Renfo collectif · piste</span></figcaption>
         </figure>
         <figure>
           <img src="photos_saison_01/08-cloture-cycle.jpg" alt="Saison bouclée" loading="lazy" onerror="this.style.display='none'">
-          <figcaption><span class="meta">12 mai 2026</span><span class="title">Saison bouclée</span></figcaption>
+          <figcaption><span class="title">Saison bouclée</span></figcaption>
         </figure>
       </div>
     </div>
