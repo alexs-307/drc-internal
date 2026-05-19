@@ -1746,7 +1746,9 @@ function renderRaces() {
     const dateLabel = nextRace.approx
       ? nextRace.approxText
       : `${nextRace.dateDisplay} ${nextRace.monthDisplay} ${nextRace.yearDisplay}`.toUpperCase();
-    const status = nextRace.confirmed ? 'confirmée' : 'à confirmer';
+    const status = nextRace.confirmed
+      ? 'confirmée'
+      : (nextRace.tbdType === 'course' ? 'course à confirmer' : 'date à confirmer');
     document.getElementById('next-race-meta').textContent =
       `${dateLabel} · ${nextRace.format} · ${status}`;
     if (hero) hero.classList.toggle('is-urgent', diff < 7);
@@ -1764,9 +1766,10 @@ function renderRaces() {
          </div>`;
 
     const pillarBadge = r.pillar ? `<span class="race-tag pillar-tag">Pilier</span>` : '';
+    const tbdLabel = r.tbdType === 'course' ? 'Course à confirmer' : 'Date à confirmer';
     const statusBadge = r.confirmed
       ? `<span class="badge-status badge-confirmed">Confirmée</span>`
-      : `<span class="badge-status badge-tbd">À confirmer</span>`;
+      : `<span class="badge-status badge-tbd">${tbdLabel}</span>`;
     const noteLine = r.note
       ? `<span class="race-tag italic">${r.note}</span>`
       : '';
