@@ -2,9 +2,13 @@
 
 Direction visuelle validée : **B — Crew Culture Street** (avec touches discrètes de C — Vintage Parisien).
 
-## Pour le dev front-end
+## Pour le dev front-end (par où commencer)
 
-Le fichier **`handover_dev.md`** est le point d'entrée unique. Il contient tout : structure HTML, CSS prêt à coller, SVG des pictos, media queries, checklist d'acceptation.
+**1.** Lire **`getting_started.md`** — workflow git, setup local, branch strategy, comment tester et déployer. Spécifique au repo `drc-internal`.
+
+**2.** Lire **`handover_dev.md`** — la spec technique complète : structure HTML, CSS prêt à coller, SVG des pictos, media queries, checklist d'acceptation.
+
+**3.** Consulter au besoin **`brand_kit_v2.md`** (système de design) et les 4 mocks SVG dans **`mocks/`** (référence visuelle).
 
 ## Pour Alex
 
@@ -14,10 +18,11 @@ Le fichier **`viewer.html`** ouvre les 4 mocks dans le navigateur (double-clic d
 
 | Fichier | Pour qui | Contenu |
 | --- | --- | --- |
-| `handover_dev.md` | dev front | Spec complète d'implémentation, prête à coder |
+| `getting_started.md` | dev front | Workflow git, setup local, branch + PR + déploiement |
+| `handover_dev.md` | dev front | Spec technique complète d'implémentation |
+| `brand_kit_v2.md` | dev | Mini brand kit (palette, typo, composants, voice) |
 | `viewer.html` | Alex (vue) | Les 4 mocks SVG inlinés avec les vraies polices |
 | `audit_v1.md` | Alex / dev | Audit V1 — pourquoi chaque reco existe |
-| `brand_kit_v2.md` | dev | Mini brand kit (palette, typo, composants, voice) |
 | `mocks/01_desktop_hero.svg` | dev | Mock Desktop Calendrier |
 | `mocks/02_navigation.svg` | dev | Système nav (desktop + mobile + pictos + états) |
 | `mocks/03_saison_01.svg` | dev | Section Saison 01 éditoriale |
