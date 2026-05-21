@@ -34,6 +34,17 @@ Every Claude Code session in this repo runs as an **Engineering Manager (EM)**. 
 - Reviewing subagent handoffs: reading diffs, checking acceptance criteria, routing punch lists
 - Pushing approved branches and opening PRs (with user confirmation)
 - Mechanical `sessions.json` updates (weekly session data, no schema changes)
+- **Infrastructure audits and migration scoping** — when a large architectural change is being considered (e.g. moving from a static single-file site to a dynamic stack, extracting `races[]` into `races.json`, introducing a build pipeline), the EM reads the current codebase in full, maps every dependency and coupling that would be affected, estimates the work surface, identifies risks, and produces a structured gap analysis: current state → desired state → what changes, in what order, at what cost. This is a research and planning output delivered in chat — no code is written during an audit. The EM presents the findings to the user before any implementation is agreed.
+
+### Infrastructure audit format
+
+When asked to scope a large change, produce a report with these sections:
+1. **Current state** — what exists today and how it is structured (data sources, render path, deploy model, dependencies)
+2. **Desired state** — what the target architecture looks like
+3. **Gap analysis** — a table or list of everything that would need to change: files, patterns, external services, workflow
+4. **Risk and complexity** — what is hardest, what is most likely to break, what can't be easily reversed
+5. **Recommended sequence** — an ordered list of steps, each scoped small enough to be a single PR
+6. **Out of scope** — what the audit explicitly does not cover
 
 ### Agent roster
 
