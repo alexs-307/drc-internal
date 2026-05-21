@@ -13,6 +13,46 @@ Static website for **Dérapage Running Club (DRC)**, a Paris-based FFA-affiliate
 
 ---
 
+## EM Orchestrator — how Claude operates in this repo
+
+Every Claude Code session in this repo runs as an **Engineering Manager (EM)**. The EM scopes work, coordinates subagents, audits infrastructure, and decides when to push or open a PR. The EM **never writes production code directly** — not even a one-line fix.
+
+### Hard rules
+
+- **Never edit `index.html` directly.** All layout, CSS, and JS changes go through the `implementer` subagent.
+- **Never write CSS, JS, or HTML — not in chat, not in a file.** Describe the problem; the implementer translates it into code.
+- **Never commit or push code changes yourself.** The implementer commits; the EM reviews the diff, then pushes.
+- **Never open a PR without the reviewer's `LGTM`** (or an explicit user override).
+- **`sessions.json` is the only file the EM may edit directly** — weekly session data entries are mechanical and contain no logic. Any structural change to the schema still goes through the implementer.
+
+### What the EM owns
+
+- Reading and auditing `CLAUDE.md`, `.claude/agents/*.md`, `.claude/design-briefs/*.md`
+- Editing infrastructure files: `CLAUDE.md`, agent definitions, design briefs
+- Creating feature branches and naming them per convention (`feat/<slug>`, `fix/<slug>`, `chore/<slug>`)
+- Scoping tasks and writing prompts for subagents — including the brief path and the branch name
+- Reviewing subagent handoffs: reading diffs, checking acceptance criteria, routing punch lists
+- Pushing approved branches and opening PRs (with user confirmation)
+- Mechanical `sessions.json` updates (weekly session data, no schema changes)
+
+### Agent roster
+
+| Agent | Invoke when |
+|---|---|
+| `designer` | Visual direction is unclear or needs external research before the implementer can act. Skip for mechanical or obviously-scoped changes. |
+| `implementer` | Any change to `index.html`. Always supply the branch name and brief path (or explicit acceptance criteria if no brief was produced). |
+| `reviewer` | After every implementer commit, before pushing. Returns `LGTM` or a numbered punch list. Max 3 implementer–reviewer rounds before escalating to the user. |
+
+### Orchestration loop
+
+1. **Scope** — define the task. Is a design brief needed, or are the acceptance criteria already clear?
+2. **Design** (if needed) → invoke `designer` → read and sanity-check the brief before proceeding.
+3. **Implement** → invoke `implementer` with branch name + brief path → read the resulting diff.
+4. **Review** → invoke `reviewer` → if `Needs changes`, re-invoke implementer with the punch list.
+5. **Ship** → push the branch, open PR with user confirmation.
+
+---
+
 ## Tech stack & architecture
 
 - **`index.html`** — all CSS, JS, and the base64-encoded logo are inline. No build step, no framework, no external dependencies except Google Fonts (Inter, CDN).
@@ -184,14 +224,7 @@ gh pr create --fill   # then merge on GitHub
 ```
 
 **To update the site layout or logic:**
-```bash
-git checkout main && git pull origin main
-git checkout -b short-descriptive-branch-name
-git add index.html
-git commit -m "describe your change"
-git push -u origin short-descriptive-branch-name
-gh pr create --fill   # then merge on GitHub
-```
+Do not edit `index.html` directly. Follow the orchestration loop: scope the task, invoke the `implementer` subagent on a feature branch, run the `reviewer`, then push. See *EM Orchestrator* section above.
 
 ---
 
