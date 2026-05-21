@@ -526,7 +526,7 @@
     margin-top: 14px;
   }
   .session-block-title {
-    font-size: 0.72rem;
+    font-size: 0.82rem;
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.08em;
@@ -550,7 +550,32 @@
   }
   .session-content.g12 { border-left-color: var(--blue); }
   .session-content.g3 { border-left-color: #7B2FFF; }
-  .session-content.suggestion { border-left-color: #D97706; background: #FFFBEB; }
+  .session-content.suggestion { border-left-color: #D97706; }
+
+  /* ===== TWO-COLUMN SESSION BODY ===== */
+  .session-body-columns {
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+  }
+  .session-col-core {
+    flex: 3;
+    min-width: 0;
+  }
+  .session-col-suggestion {
+    flex: 2;
+    min-width: 0;
+  }
+  @media (max-width: 900px) {
+    .session-body-columns {
+      flex-direction: column;
+    }
+    .session-col-suggestion {
+      margin-left: 0;
+      margin-top: 4px;
+      width: 100%;
+    }
+  }
   .sessions-count {
     font-size: 0.8rem;
     color: var(--text-muted);
@@ -918,7 +943,7 @@
   }
   .session-block-title {
     font-family: var(--font-mono);
-    font-size: 10px;
+    font-size: 12px;
     letter-spacing: 0.14em;
   }
 
@@ -1857,7 +1882,6 @@ function formatDate(dateStr) {
   const opts = { day: '2-digit', month: 'short', year: 'numeric' };
   return d.toLocaleDateString('fr-FR', opts);
 }
-
 function renderSessions(list) {
   const container = document.getElementById('sessions-list');
   const countEl = document.getElementById('sessions-count');
@@ -1885,17 +1909,36 @@ function renderSessions(list) {
 
     const g3Html = g3ann ? `
       <div class="session-block">
-        <div class="session-block-title g3">Groupe 3</div>
+        <div class="session-block-title g3">Séance coeur G3</div>
         <div class="session-content g3">${g3ann}</div>
       </div>` : '';
 
-    const sugHtml = sugang ? `
-      <div class="session-block">
-        <div class="session-block-title suggestion">💡 Suggestion de la semaine</div>
-        <div class="session-content suggestion">⚠ Uniquement pour ceux qui font déjà au moins 3 séances/semaine
-
-${sugang}</div>
-      </div>` : '';
+    let bodyHtml;
+    if (sugang) {
+      bodyHtml = `
+        <div class="session-body-columns">
+          <div class="session-col-core">
+            <div class="session-block">
+              <div class="session-block-title g12">${s.g3 ? 'Séance coeur G1/G2' : 'Séance coeur'}</div>
+              <div class="session-content g12">${g12ann}</div>
+            </div>
+            ${g3Html}
+          </div>
+          <div class="session-col-suggestion">
+            <div class="session-block">
+              <div class="session-block-title suggestion">💡 Suggestion de la semaine</div>
+              <div class="session-content suggestion">⚠️ Uniquement pour ceux qui font déjà au moins 3 séances/semaine\n\n${sugang}</div>
+            </div>
+          </div>
+        </div>`;
+    } else {
+      bodyHtml = `
+        <div class="session-block">
+          <div class="session-block-title g12">${s.g3 ? 'Séance coeur G1/G2' : 'Séance coeur'}</div>
+          <div class="session-content g12">${g12ann}</div>
+        </div>
+        ${g3Html}`;
+    }
 
     item.innerHTML = `
       <div class="session-header" onclick="toggleSession(this)">
@@ -1905,12 +1948,7 @@ ${sugang}</div>
         <span class="session-chevron">▼</span>
       </div>
       <div class="session-body">
-        <div class="session-block">
-          <div class="session-block-title g12">${s.g3 ? 'Groupe 1 / Groupe 2' : 'Programme'}</div>
-          <div class="session-content g12">${g12ann}</div>
-        </div>
-        ${g3Html}
-        ${sugHtml}
+        ${bodyHtml}
       </div>`;
 
     container.appendChild(item);
