@@ -567,7 +567,7 @@
   .session-body-columns {
     display: flex;
     align-items: flex-start;
-    gap: 0;
+    gap: 16px;
   }
   .session-col-core {
     flex: 3;
@@ -577,10 +577,9 @@
     flex: 2;
     min-width: 0;
     border-left: 1px solid var(--bone);
-    background: #FEF9EE;
+    background: #FFFBEB;
     border-radius: 0 0 var(--radius-sm) var(--radius-sm);
     padding: 0 16px 4px;
-    margin-left: 16px;
   }
   .session-col-suggestion .session-block-title.suggestion {
     margin-top: 14px;
@@ -599,7 +598,7 @@
     .session-col-suggestion {
       border-left: none;
       border-top: 1px solid var(--bone);
-      background: #FEF9EE;
+      background: #FFFBEB;
       border-radius: 0 0 var(--radius-sm) var(--radius-sm);
       padding: 0 0 4px;
       margin-left: 0;
@@ -1985,7 +1984,7 @@ function renderSessions(list) {
             ${g3Html}
           </div>
           <div class="session-col-suggestion">
-            <div class="session-block-title suggestion">Suggestion de la semaine</div>
+            <div class="session-block-title suggestion">💡 Suggestion de la semaine</div>
             <div class="suggestion-disclaimer">Uniquement pour ceux qui font déjà au moins 3 séances/semaine</div>
             <div class="session-content suggestion">${sugang}</div>
           </div>
