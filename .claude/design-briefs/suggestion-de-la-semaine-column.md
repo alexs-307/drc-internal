@@ -22,9 +22,15 @@ On weeks where a "Suggestion de la semaine" exists, the Tuesday session card sho
 
 **Motion:** No new animation introduced. The card opens and closes with the same accordion behaviour it has today. The two-column layout is visible once the card is open; there is no reveal animation for the columns themselves.
 
-## Week indicator — recommendation: OUT
+## Week indicator
 
-The card already shows a formatted date badge in the header (e.g. "Mardi 19 mai 2026"). Adding a week-of-year tag or a date-range label like "5 → 11 mai" would duplicate information the reader can trivially derive from the date they just read. In a scrollable list where some cards are two-column and some are one-column, the layout asymmetry itself is already a contextual cue that signals "this week has a suggestion." A week indicator earns its place in a calendar view or weekly digest email; inside a session accordion it adds one more thing to read without adding meaning. Leave it out.
+The indicator is in. The chosen format is a short date range: "5–11 mai" (day numbers flanking an en-dash, month in lowercase). This reads immediately in French without any mental translation — unlike an ISO week number like "S20", which is compact but opaque for non-technical club members who have no reason to think in ISO weeks.
+
+**Placement:** The indicator lives inside the card body, flush to the top-left, above the G1/G2 block and above any column structure. It occupies its own quiet line before the session content begins — a preamble, not a header element. The header row (date badge, session label, venue chip, chevron) is left entirely untouched.
+
+**Visual weight:** The indicator should be noticeably smaller than the existing date badge in the header — roughly the size of the disclaimer text or the venue chip label. It is rendered in the same muted graphite tone used for secondary text and inactive labels throughout the site, not in the amber accent or the deep blue. No background chip, no border, no pill shape. The lettering follows the same spaced uppercase mono style used elsewhere for quiet metadata in the card, but at a reduced size so it sits clearly below the visual hierarchy of the session labels. It should feel like a marginal note in a printed race programme — present and useful, but not asking to be read first.
+
+**Scope:** Every Entrainement tab session card gets the indicator, regardless of whether a suggestion exists that week. It is a consistent navigation anchor for the full list, not a feature of the two-column layout.
 
 ## Acceptance criteria
 
@@ -36,4 +42,5 @@ The card already shows a formatted date badge in the header (e.g. "Mardi 19 mai 
 - [ ] The suggestion column header sits at the same typographic scale as the G1/G2 and G3 labels in the left column
 - [ ] The disclaimer ("Uniquement pour ceux…") is visually subordinate to the suggestion content — smaller, quieter, in secondary text colour
 - [ ] The card header row (date badge, session label, venue, chevron) spans the full width regardless of whether the body is one- or two-column
-- [ ] No week indicator or date-range tag has been added to the card
+- [ ] Every session card in the Entrainement tab shows a week date range indicator (e.g. "5–11 mai") in the card body, above the session content
+- [ ] The week indicator reads as clearly subordinate to both the date badge and the session labels — smaller in scale, graphite in tone, no background or border treatment
