@@ -551,6 +551,65 @@
   .session-content.g12 { border-left-color: var(--blue); }
   .session-content.g3 { border-left-color: #7B2FFF; }
   .session-content.suggestion { border-left-color: #D97706; background: #FFFBEB; }
+
+  /* ===== WEEK INDICATOR ===== */
+  .session-week-indicator {
+    font-family: var(--font-mono);
+    font-size: 0.68rem;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--graphite);
+    margin-top: 14px;
+    margin-bottom: 4px;
+  }
+
+  /* ===== TWO-COLUMN SESSION BODY ===== */
+  .session-body-columns {
+    display: flex;
+    align-items: flex-start;
+    gap: 0;
+  }
+  .session-col-core {
+    flex: 3;
+    min-width: 0;
+  }
+  .session-col-suggestion {
+    flex: 2;
+    min-width: 0;
+    border-left: 1px solid var(--bone);
+    background: #FEF9EE;
+    border-radius: 0 0 var(--radius-sm) var(--radius-sm);
+    padding: 0 16px 4px;
+    margin-left: 16px;
+  }
+  .session-col-suggestion .session-block-title.suggestion {
+    margin-top: 14px;
+  }
+  .suggestion-disclaimer {
+    font-size: 0.72rem;
+    color: var(--graphite);
+    line-height: 1.5;
+    margin-top: 6px;
+    margin-bottom: 8px;
+  }
+  @media (max-width: 900px) {
+    .session-body-columns {
+      flex-direction: column;
+    }
+    .session-col-suggestion {
+      border-left: none;
+      border-top: 1px solid var(--bone);
+      background: #FEF9EE;
+      border-radius: 0 0 var(--radius-sm) var(--radius-sm);
+      padding: 0 0 4px;
+      margin-left: 0;
+      margin-top: 4px;
+      width: 100%;
+    }
+    .session-col-suggestion .session-block-title.suggestion {
+      margin-top: 14px;
+    }
+  }
   .sessions-count {
     font-size: 0.8rem;
     color: var(--text-muted);
@@ -1858,6 +1917,28 @@ function formatDate(dateStr) {
   return d.toLocaleDateString('fr-FR', opts);
 }
 
+const FR_MONTHS = ['janvier','février','mars','avril','mai','juin','juillet','août','septembre','octobre','novembre','décembre'];
+
+function weekRangeLabel(dateStr) {
+  // Sessions are on Tuesdays. Compute Mon–Sun of the week the date belongs to.
+  const d = new Date(dateStr + 'T12:00:00');
+  const dow = d.getDay(); // 0=Sun,1=Mon,...,6=Sat
+  const offsetToMon = (dow === 0) ? -6 : 1 - dow;
+  const mon = new Date(d);
+  mon.setDate(d.getDate() + offsetToMon);
+  const sun = new Date(mon);
+  sun.setDate(mon.getDate() + 6);
+  const monDay = mon.getDate();
+  const sunDay = sun.getDate();
+  const monMonth = mon.getMonth();
+  const sunMonth = sun.getMonth();
+  if (monMonth === sunMonth) {
+    return monDay + '–' + sunDay + ' ' + FR_MONTHS[sunMonth];
+  } else {
+    return monDay + ' ' + FR_MONTHS[monMonth] + ' – ' + sunDay + ' ' + FR_MONTHS[sunMonth];
+  }
+}
+
 function renderSessions(list) {
   const container = document.getElementById('sessions-list');
   const countEl = document.getElementById('sessions-count');
@@ -1889,13 +1970,35 @@ function renderSessions(list) {
         <div class="session-content g3">${g3ann}</div>
       </div>` : '';
 
-    const sugHtml = sugang ? `
-      <div class="session-block">
-        <div class="session-block-title suggestion">💡 Suggestion de la semaine</div>
-        <div class="session-content suggestion">⚠ Uniquement pour ceux qui font déjà au moins 3 séances/semaine
+    const weekLabel = weekRangeLabel(s.date);
 
-${sugang}</div>
-      </div>` : '';
+    let bodyHtml;
+    if (sugang) {
+      bodyHtml = `
+        <div class="session-week-indicator">${weekLabel}</div>
+        <div class="session-body-columns">
+          <div class="session-col-core">
+            <div class="session-block">
+              <div class="session-block-title g12">${s.g3 ? 'Groupe 1 / Groupe 2' : 'Programme'}</div>
+              <div class="session-content g12">${g12ann}</div>
+            </div>
+            ${g3Html}
+          </div>
+          <div class="session-col-suggestion">
+            <div class="session-block-title suggestion">Suggestion de la semaine</div>
+            <div class="suggestion-disclaimer">Uniquement pour ceux qui font déjà au moins 3 séances/semaine</div>
+            <div class="session-content suggestion">${sugang}</div>
+          </div>
+        </div>`;
+    } else {
+      bodyHtml = `
+        <div class="session-week-indicator">${weekLabel}</div>
+        <div class="session-block">
+          <div class="session-block-title g12">${s.g3 ? 'Groupe 1 / Groupe 2' : 'Programme'}</div>
+          <div class="session-content g12">${g12ann}</div>
+        </div>
+        ${g3Html}`;
+    }
 
     item.innerHTML = `
       <div class="session-header" onclick="toggleSession(this)">
@@ -1905,12 +2008,7 @@ ${sugang}</div>
         <span class="session-chevron">▼</span>
       </div>
       <div class="session-body">
-        <div class="session-block">
-          <div class="session-block-title g12">${s.g3 ? 'Groupe 1 / Groupe 2' : 'Programme'}</div>
-          <div class="session-content g12">${g12ann}</div>
-        </div>
-        ${g3Html}
-        ${sugHtml}
+        ${bodyHtml}
       </div>`;
 
     container.appendChild(item);
