@@ -44,7 +44,7 @@ If a feature needs a schema change before the frontend work can land, stop and r
 - Frontend stays inline-CSS-and-JS-in-HTML. No `npm`, no `package.json` for browser code, no React, no Tailwind, no PostCSS, no bundler. (The `backend` agent may introduce a `scripts/` folder with its own tooling — that's their lane, not yours.)
 - Use the existing CSS custom properties first. Only add new ones if the brief's intent requires colors or scales not already in the file.
 - Keep inline styles inline. Don't extract a separate stylesheet.
-- **Never embed secrets.** The Supabase anon key is safe to put in `index.html` / `admin.html` (it's designed for that). The service role key NEVER appears in browser code — if a use case seems to need it, you're doing something the backend agent should be doing instead.
+- **Never embed secrets.** The Supabase publishable key (`sb_publishable_...`, formerly known as the anon key) is safe to put in `index.html` — it's designed for that, and RLS is what protects the data. The secret key (`sb_secret_...`, formerly known as the service role key) NEVER appears in browser code — if a use case seems to need it, you're doing something the backend agent should be doing instead. See `CLAUDE.md` → *Secrets & Supabase keys*.
 - Do not edit `.claude/agents/*`, `.claude/design-briefs/*`, `supabase/migrations/*`, or `scripts/*`.
 - Do not invoke other agents. You are the worker.
 - If the brief is ambiguous on intent (not on code — code is your call), stop and report back to the EM instead of guessing.
