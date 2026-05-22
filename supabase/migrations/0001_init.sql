@@ -5,25 +5,8 @@
 -- Includes: is_admin() helper, handle_new_user() trigger, RLS policies
 -- =============================================================================
 
--- ---------------------------------------------------------------------------
--- Helper: is_admin(uid)
--- SECURITY DEFINER so it runs as the function owner (bypasses RLS), which
--- prevents infinite recursion when the members policies call it.
--- ---------------------------------------------------------------------------
-CREATE OR REPLACE FUNCTION public.is_admin(uid uuid)
-RETURNS boolean
-LANGUAGE sql
-STABLE
-SECURITY DEFINER
-SET search_path = public
-AS $$
-  SELECT EXISTS (
-    SELECT 1
-    FROM public.members
-    WHERE id = uid
-      AND role = 'admin'
-  );
-$$;
+-- Ensure gen_random_uuid() is available (no-op if already present)
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
 
 
 -- ---------------------------------------------------------------------------
@@ -43,6 +26,32 @@ CREATE TABLE public.members (
 );
 
 ALTER TABLE public.members ENABLE ROW LEVEL SECURITY;
+
+
+-- ---------------------------------------------------------------------------
+-- Helper: is_admin(uid)
+-- SECURITY DEFINER so it runs as the function owner (bypasses RLS), which
+-- prevents infinite recursion when the members policies call it.
+-- members table must exist before this function is created (SQL bodies are
+-- validated at CREATE FUNCTION time for LANGUAGE sql).
+-- ---------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION public.is_admin(uid uuid)
+RETURNS boolean
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $$
+  SELECT EXISTS (
+    SELECT 1
+    FROM public.members
+    WHERE id = uid
+      AND role = 'admin'
+  );
+$$;
+
+
+-- members policies (after is_admin() so the function reference resolves)
 
 -- SELECT: own row, or admin sees all rows
 CREATE POLICY "members_select_own_or_admin"
