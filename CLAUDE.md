@@ -52,7 +52,7 @@ When asked to scope a large change, produce a report with these sections:
 | Agent | Invoke when |
 |---|---|
 | `designer` | Visual direction is unclear or needs external research before the implementer can act. Covers both public site and admin UI (utilitarian where the public site is editorial). Skip for mechanical or obviously-scoped changes. |
-| `implementer` | Any change to `index.html`, `admin.html`, `sessions.json`, or any browser-side JS (including Supabase JS SDK calls). Always supply the branch name and brief path. |
+| `implementer` | Any change to `index.html`, `sessions.json`, or any browser-side JS (including Supabase JS SDK calls). Also `admin.html` if/when that file is ever built — none today. Always supply the branch name and brief path. |
 | `backend` | Any change under `supabase/migrations/`, `scripts/`, or anything related to Postgres schema, RLS policies, or server-side data plumbing. Always supply the branch name and the relevant audit/brief. |
 | `reviewer` | After every implementer or backend commit, before pushing. Returns `LGTM` or a numbered punch list. Max 3 worker–reviewer rounds before escalating to the user. |
 
@@ -72,10 +72,31 @@ When asked to scope a large change, produce a report with these sections:
 - **`index.html`** — all CSS, JS, and the base64-encoded logo are inline. No build step, no framework, no external dependencies except Google Fonts (Inter, CDN).
 - **`sessions.json`** — session data for the Entrainement tab. Loaded via `fetch()` at runtime. Edit this file to add/update sessions without touching HTML.
 - **Vanilla JS only** — no React, no Alpine, no jQuery.
-- **No backend** — race data is hardcoded in a JS array inside `index.html`. Session data lives in `sessions.json`. `localStorage` is used for VMA persistence.
-- **No access control** — the site is public on GitHub Pages. A client-side password gate used to exist but was removed: on a static site any JS-based gate is trivially bypassable (view-source, disable JS, fetch the JSON directly), so it gave a false sense of privacy. Real access control would have to come from the host (Cloudflare Access, Netlify password protection, etc.) or a backend — not from JS in this repo.
+- **Backend** — Supabase (Postgres + Auth + Storage) is being introduced in stages. As of today the live production site is still fully static: race data hardcoded in `races[]` inside `index.html`, session data in `sessions.json`, VMA in `localStorage`. The schema for Supabase lives at `supabase/migrations/0001_init.sql`; the frontend has not yet been wired to it. See *Secrets & Supabase keys* below for how keys are handled.
+- **No access control on the static site** — the public site is open on GitHub Pages. A client-side password gate used to exist but was removed: on a static site any JS-based gate is trivially bypassable (view-source, disable JS, fetch the JSON directly), so it gave a false sense of privacy. Real access control comes from Supabase Auth + RLS at the data layer once member features are wired — not from JS in this repo.
 
 Do not introduce a build system, a bundler, or a JS framework without explicit instruction.
+
+---
+
+## Secrets & Supabase keys
+
+Supabase issues two long-lived API keys per project. They are handled very differently.
+
+| Key | New name (format) | Old name | Where it lives | Bypasses RLS? |
+|---|---|---|---|---|
+| Publishable | `sb_publishable_...` | `anon` | Local `.env`; safe to inline in client HTML once the frontend is wired | No — RLS fully enforced |
+| Secret | `sb_secret_...` | `service_role` | Local `.env` only — never repo, never browser, never CI logs | **Yes — full admin** |
+
+**Publishable key.** A public token that tells Supabase the request is coming from a browser. All authorization happens via RLS policies on the database. Safe to commit into client HTML — the security model assumes any attacker has it. Without an authenticated user session, it can only do what `USING (true)` policies allow.
+
+**Secret key.** Equivalent to a Postgres superuser. Holding it = full read/write/delete on every table, RLS ignored. Required only by server-side scripts (e.g. a one-off bulk-load script under `scripts/`). Never goes in browser code. Never gets committed. Scripts read it via `process.env.SUPABASE_SECRET_KEY` (or equivalent) at runtime, pulled from a local `.env` or password manager.
+
+**`.env.example`** lists `SUPABASE_URL` and `SUPABASE_PUBLISHABLE_KEY` only. The secret key is deliberately omitted from `.env.example` to avoid the "fill in real value → forget → commit" failure mode. When a script under `scripts/` first needs it, that script's README explains how to set it locally.
+
+**`.env`** is gitignored. Always.
+
+**If a key ever leaks** (screenshot, public repo, CI log): rotate it immediately in the Supabase dashboard. This invalidates every place it was used, so check `scripts/` and `index.html` for hardcoded references afterward.
 
 ---
 
@@ -244,8 +265,9 @@ Do not edit `index.html` directly. Follow the orchestration loop: scope the task
 
 ## What NOT to do
 
-- Do not add a backend, a database, or a server-side framework.
-- Do not introduce npm / node_modules / a build pipeline.
+- Do not introduce a custom server (Express, Fastify, Flask, etc.) you have to run and maintain. Supabase (Postgres + Auth + Storage) is the only sanctioned backend layer — see *Tech stack & architecture* and *Secrets & Supabase keys* above.
+- Do not introduce npm / node_modules / a build pipeline for the frontend. (A `scripts/` folder with its own tooling is acceptable for backend one-off migrations — that's the backend agent's lane.)
+- Do not create `admin.html` without explicit instruction. Admin-only data editing (sessions, races, resources) currently happens in **Supabase Studio** — the table editor in the project's Supabase dashboard. The agent definitions still reference `admin.html` as forward-looking guardrails for if/when one is built; today it does not exist.
 - Do not remove the base64 logo or replace it with an external URL (site must work offline / file://).
 - Do not commit directly to `main` — always go through a feature branch + PR (see *Git workflow*).
 - Do not re-add a client-side password gate — it offers no real protection on a static site (see *No access control* under *Tech stack*).
