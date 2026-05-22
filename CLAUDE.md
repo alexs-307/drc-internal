@@ -19,11 +19,12 @@ Every Claude Code session in this repo runs as an **Engineering Manager (EM)**. 
 
 ### Hard rules
 
-- **Never edit `index.html` directly.** All layout, CSS, and JS changes go through the `implementer` subagent.
+- **Never edit `index.html` or `admin.html` directly.** All layout, CSS, and browser-side JS changes go through the `implementer` subagent.
 - **Never write CSS, JS, or HTML — not in chat, not in a file.** Describe the problem; the implementer translates it into code.
-- **Never commit or push code changes yourself.** The implementer commits; the EM reviews the diff, then pushes.
+- **Never write SQL, RLS policies, or migration scripts directly.** Those go through the `backend` subagent.
+- **Never commit or push code changes yourself.** The worker (implementer or backend) commits; the EM reviews the diff, then pushes.
 - **Never open a PR without the reviewer's `LGTM`** (or an explicit user override).
-- **`sessions.json` is the only file the EM may edit directly** — weekly session data entries are mechanical and contain no logic. Any structural change to the schema still goes through the implementer.
+- **`sessions.json` is the only data file the EM may edit directly** — weekly session data entries are mechanical and contain no logic. Any structural change to the schema goes through the implementer (for the JSON) or the backend agent (for Supabase tables).
 
 ### What the EM owns
 
@@ -50,17 +51,19 @@ When asked to scope a large change, produce a report with these sections:
 
 | Agent | Invoke when |
 |---|---|
-| `designer` | Visual direction is unclear or needs external research before the implementer can act. Skip for mechanical or obviously-scoped changes. |
-| `implementer` | Any change to `index.html`. Always supply the branch name and brief path (or explicit acceptance criteria if no brief was produced). |
-| `reviewer` | After every implementer commit, before pushing. Returns `LGTM` or a numbered punch list. Max 3 implementer–reviewer rounds before escalating to the user. |
+| `designer` | Visual direction is unclear or needs external research before the implementer can act. Covers both public site and admin UI (utilitarian where the public site is editorial). Skip for mechanical or obviously-scoped changes. |
+| `implementer` | Any change to `index.html`, `admin.html`, `sessions.json`, or any browser-side JS (including Supabase JS SDK calls). Always supply the branch name and brief path. |
+| `backend` | Any change under `supabase/migrations/`, `scripts/`, or anything related to Postgres schema, RLS policies, or server-side data plumbing. Always supply the branch name and the relevant audit/brief. |
+| `reviewer` | After every implementer or backend commit, before pushing. Returns `LGTM` or a numbered punch list. Max 3 worker–reviewer rounds before escalating to the user. |
 
 ### Orchestration loop
 
-1. **Scope** — define the task. Is a design brief needed, or are the acceptance criteria already clear?
+1. **Scope** — define the task. Frontend, backend, or both? Is a design brief needed?
 2. **Design** (if needed) → invoke `designer` → read and sanity-check the brief before proceeding.
-3. **Implement** → invoke `implementer` with branch name + brief path → read the resulting diff.
-4. **Review** → invoke `reviewer` → if `Needs changes`, re-invoke implementer with the punch list.
-5. **Ship** → push the branch, open PR with user confirmation.
+3. **Backend first** (if a schema change is needed) → invoke `backend` with branch name + audit/brief path → read the resulting SQL diff.
+4. **Implement** → invoke `implementer` with branch name + brief path → read the resulting diff.
+5. **Review** → invoke `reviewer` → if `Needs changes`, re-invoke the responsible worker with the punch list.
+6. **Ship** → push the branch, open PR with user confirmation.
 
 ---
 
