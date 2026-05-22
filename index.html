@@ -1349,6 +1349,12 @@
     font-size: 0.9rem;
     padding: 20px 0;
   }
+
+  .race-divider {
+    border: none;
+    border-top: 1px solid var(--border);
+    margin: 16px 0;
+  }
 </style>
 </head>
 <body>
@@ -1651,7 +1657,8 @@ async function renderRaces() {
   const { data: races, error } = await window.supabase
     .from('races')
     .select('*')
-    .order('date', { ascending: true, nullsFirst: false });
+    .order('date_label', { ascending: true, nullsFirst: true })   // NULL date_label first = concrete-date races
+    .order('date', { ascending: true });                          // chronological within each group
 
   if (error) {
     container.innerHTML = '<p class="data-error">Calendrier indisponible. Réessayez dans un instant.</p>';
@@ -1662,8 +1669,8 @@ async function renderRaces() {
   today.setHours(0,0,0,0);
   container.innerHTML = '';
 
-  // Countdown — only concrete races (date !== null)
-  const concreteRaces = races.filter(r => r.date !== null);
+  // Countdown — only concrete races (no date_label)
+  const concreteRaces = races.filter(r => r.date_label === null);
   let nextRace = null;
   for (const r of concreteRaces) {
     const rDate = new Date(r.date);
@@ -1683,8 +1690,18 @@ async function renderRaces() {
     if (hero) hero.classList.toggle('is-urgent', diff < 7);
   }
 
+  let prevWasConcrete = null;
   races.forEach(r => {
-    const isApprox = r.date === null;
+    const isApprox = r.date_label !== null;
+
+    // Insert a subtle divider at the transition from concrete to approximate
+    if (prevWasConcrete === true && isApprox) {
+      const divider = document.createElement('hr');
+      divider.className = 'race-divider';
+      container.appendChild(divider);
+    }
+    prevWasConcrete = !isApprox;
+
     const card = document.createElement('div');
     card.className = 'race-card' + (r.pillar ? ' pillar' : '');
 
