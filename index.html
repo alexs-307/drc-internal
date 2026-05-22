@@ -1657,8 +1657,7 @@ async function renderRaces() {
   const { data: races, error } = await window.supabase
     .from('races')
     .select('*')
-    .order('date_label', { ascending: true, nullsFirst: true })   // NULL date_label first = concrete-date races
-    .order('date', { ascending: true });                          // chronological within each group
+    .order('date', { ascending: true });   // chronological order; every row has a non-null date after migration 0003
 
   if (error) {
     container.innerHTML = '<p class="data-error">Calendrier indisponible. Réessayez dans un instant.</p>';
@@ -1669,10 +1668,15 @@ async function renderRaces() {
   today.setHours(0,0,0,0);
   container.innerHTML = '';
 
+  // Split into concrete-date races (date_label === null) and approximate-date races,
+  // preserving chronological order within each group from the ORDER BY above.
+  const concretes = races.filter(r => r.date_label === null);
+  const approximates = races.filter(r => r.date_label !== null);
+  const ordered = [...concretes, ...approximates];
+
   // Countdown — only concrete races (no date_label)
-  const concreteRaces = races.filter(r => r.date_label === null);
   let nextRace = null;
-  for (const r of concreteRaces) {
+  for (const r of concretes) {
     const rDate = new Date(r.date);
     if (rDate >= today) { nextRace = r; break; }
   }
@@ -1691,7 +1695,7 @@ async function renderRaces() {
   }
 
   let prevWasConcrete = null;
-  races.forEach(r => {
+  ordered.forEach(r => {
     const isApprox = r.date_label !== null;
 
     // Insert a subtle divider at the transition from concrete to approximate
