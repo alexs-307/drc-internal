@@ -2299,6 +2299,7 @@ async function initAuth() {
       const email = emailInput ? emailInput.value.trim() : '';
       if (!email) return;
       resendBtn.disabled = true;
+      _resendLockUntil = Date.now() + 30000;
       const error = await sendMagicLink(email);
       if (error) {
         if (error.status === 429) {
@@ -2307,7 +2308,6 @@ async function initAuth() {
           showAuthError('auth-resend-error', 'Connexion impossible. Vérifie ta connexion et réessaie.');
         }
       }
-      _resendLockUntil = Date.now() + 30000;
       startResendLockdown();
     });
   }
@@ -2316,6 +2316,7 @@ async function initAuth() {
   const changeEmailBtn = getAuthEl('auth-change-email-btn');
   if (changeEmailBtn) {
     changeEmailBtn.addEventListener('click', () => {
+      clearAuthError('auth-signin-error');
       showAuthState('auth-state-signout', '');
       const input = getAuthEl('auth-email');
       if (input) { input.value = ''; input.focus(); }
@@ -2428,6 +2429,7 @@ async function handleSignedIn(user) {
 }
 
 function showPendingState(email) {
+  clearAuthError('auth-signin-error');
   const bodyEl = getAuthEl('auth-confirm-body');
   if (bodyEl) {
     bodyEl.textContent = `Un lien de connexion vient d'être envoyé à ${email}. Clique dessus pour te connecter — il est valable 10 minutes.`;
