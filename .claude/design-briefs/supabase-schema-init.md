@@ -94,9 +94,9 @@ Create a Postgres trigger on `auth.users` insert that automatically creates a co
 - **`.env.example`** at repo root with two placeholder lines:
   ```
   SUPABASE_URL=https://your-project-ref.supabase.co
-  SUPABASE_ANON_KEY=your-anon-key-here
+  SUPABASE_PUBLISHABLE_KEY=sb_publishable_xxxxxxxxxxxxxxxxxxxxxxxx
   ```
-  Do NOT include a service role key placeholder. The service role key is referenced only in script comments where applicable, never in `.env.example`.
+  Do NOT include a secret key placeholder. The secret key (formerly known as the service role key — `sb_secret_...` format) is referenced only in script comments where applicable, never in `.env.example`.
 
 - **`.gitignore`** must include `.env` (add if not present).
 
@@ -125,4 +125,4 @@ Create a Postgres trigger on `auth.users` insert that automatically creates a co
 
 ## Branch
 
-`feat/supabase-schema-init` — already created.
+The EM will name the branch at invocation time (not hardcoded here — the previous branch `feat/supabase-schema-init` was used only for the brief itself, which has now landed on `main`).
