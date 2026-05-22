@@ -1342,6 +1342,13 @@
     outline: 2px solid var(--blue);
     outline-offset: 2px;
   }
+
+  /* ===== DATA STATES ===== */
+  .data-error, .data-loading {
+    color: var(--text-muted);
+    font-size: 0.9rem;
+    padding: 20px 0;
+  }
 </style>
 </head>
 <body>
@@ -1552,31 +1559,7 @@
     </h1>
     <p class="page-sub">Documents internes du club.</p>
 
-    <div class="resource-list">
-
-      <div class="resource-card">
-        <img class="resource-preview" src="ressources/vma_seuil_preview.png" alt="Aperçu de la première page du document VMA et Seuil" loading="lazy" />
-        <div class="resource-body">
-          <h3>VMA &amp; Seuil</h3>
-          <p>Allures de référence · Mise à jour : avril 2026</p>
-          <div class="resource-actions-v2">
-            <a class="btn-v2" href="ressources/vma_seuil.pdf" target="_blank" rel="noopener">Ouvrir</a>
-            <a class="btn-v2 secondary" href="ressources/vma_seuil.pdf" download>Télécharger</a>
-          </div>
-        </div>
-      </div>
-
-      <div class="resource-card">
-        <img class="resource-preview" src="ressources/renfo_du_coureur_preview.png" alt="Aperçu de la première page du document Renfo du coureur" loading="lazy" />
-        <div class="resource-body">
-          <h3>Renfo du coureur &amp; mobilité</h3>
-          <p>Renforcement &amp; exercices de mobilité · Mise à jour : mars 2026</p>
-          <div class="resource-actions-v2">
-            <a class="btn-v2" href="ressources/renfo_du_coureur.pdf" target="_blank" rel="noopener">Ouvrir</a>
-            <a class="btn-v2 secondary" href="ressources/renfo_du_coureur.pdf" download>Télécharger</a>
-          </div>
-        </div>
-      </div>
+    <div class="resource-list" id="resource-list">
 
       <div class="resource-card is-placeholder">
         <div class="resource-preview-empty" aria-hidden="true">PDF</div>
@@ -1606,6 +1589,18 @@
   </div>
   Dérapage Running Club · Usage interne uniquement · <a href="https://www.instagram.com/derapagerunningclub/" target="_blank" rel="noopener">@derapage_rc</a>
 </footer>
+
+<script type="module">
+  import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
+
+  const SUPABASE_URL = 'https://zglyzryhckxbwsivlotu.supabase.co';
+  const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_GledNe7S-JthFTqOwYSnzw_3ASlFZae';
+
+  const supabase = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
+  window.supabase = supabase;
+  // Signal to the non-module script that the client is ready
+  document.dispatchEvent(new CustomEvent('supabase-ready'));
+</script>
 
 <script>
 // ===================================================================
@@ -1645,157 +1640,72 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
 })();
 
 // ===================================================================
-// RACE DATA
+// RACE DATA — fetched from Supabase
 // ===================================================================
-const races = [
-  {
-    name: "🏕 Weekend de Rentrée DRC",
-    dateStr: "2026-10-24",
-    dateDisplay: "24-25",
-    monthDisplay: "Oct",
-    yearDisplay: "2026",
-    approx: false,
-    format: "Weekend long · vote en cours",
-    note: "Deadline candidatures : 15 juin 2026",
-    pillar: false,
-    confirmed: false,
-    tbdType: "course"
-  },
-  {
-    name: "Semi-marathon de Boulogne ⭐",
-    dateStr: "2026-11-15",
-    dateDisplay: null,
-    monthDisplay: "Nov",
-    yearDisplay: "2026",
-    approx: true,
-    approxText: "Mi-novembre 2026",
-    format: "21.1km",
-    pillar: true,
-    confirmed: false
-  },
-  {
-    name: "10K Tour Eiffel",
-    dateStr: "2026-12-06",
-    dateDisplay: "06",
-    monthDisplay: "Déc",
-    yearDisplay: "2026",
-    approx: false,
-    format: "10km",
-    pillar: false,
-    confirmed: true
-  },
-  {
-    name: "10K de Montmartre",
-    dateStr: "2027-01-15",
-    dateDisplay: null,
-    monthDisplay: "Jan",
-    yearDisplay: "2027",
-    approx: true,
-    approxText: "Mi-janvier 2027",
-    format: "10km",
-    pillar: false,
-    confirmed: false
-  },
-  {
-    name: "Course folklore (Trail)",
-    dateStr: "2027-02-15",
-    dateDisplay: null,
-    monthDisplay: "Fév-Mars",
-    yearDisplay: "2027",
-    approx: true,
-    approxText: "Fév–Mars 2027",
-    format: "Trail · à confirmer",
-    note: "Réf. Trail du Haut-Cantal",
-    pillar: false,
-    confirmed: false
-  },
-  {
-    name: "Semi-marathon de Paris ⭐",
-    dateStr: "2027-03-07",
-    dateDisplay: null,
-    monthDisplay: "Mars",
-    yearDisplay: "2027",
-    approx: true,
-    approxText: "Début mars 2027",
-    format: "21.1km",
-    pillar: true,
-    confirmed: false
-  },
-  {
-    name: "Marathon de Paris ⭐",
-    dateStr: "2027-04-13",
-    dateDisplay: null,
-    monthDisplay: "Avr",
-    yearDisplay: "2027",
-    approx: true,
-    approxText: "Mi-avril 2027",
-    format: "42.2km",
-    pillar: true,
-    confirmed: false,
-    link: null
-  },
-  {
-    name: "Course de clôture de saison",
-    dateStr: "2027-05-15",
-    dateDisplay: null,
-    monthDisplay: "Mai-Juin",
-    yearDisplay: "2027",
-    approx: true,
-    approxText: "Mai–Juin 2027",
-    format: "~10km",
-    pillar: false,
-    confirmed: false
+const MONTHS_FR = ['Jan','Fév','Mars','Avr','Mai','Juin','Juil','Août','Sep','Oct','Nov','Déc'];
+
+async function renderRaces() {
+  const container = document.getElementById('race-list');
+  container.innerHTML = '<p class="data-loading">Chargement…</p>';
+
+  const { data: races, error } = await window.supabase
+    .from('races')
+    .select('*')
+    .order('date', { ascending: true, nullsFirst: false });
+
+  if (error) {
+    container.innerHTML = '<p class="data-error">Calendrier indisponible. Réessayez dans un instant.</p>';
+    return;
   }
-];
 
-function cleanName(n) {
-  return n.replace(/[⭐🏕]/g, '').trim();
-}
-
-function renderRaces() {
   const today = new Date();
   today.setHours(0,0,0,0);
-  const container = document.getElementById('race-list');
   container.innerHTML = '';
 
+  // Countdown — only concrete races (date !== null)
+  const concreteRaces = races.filter(r => r.date !== null);
   let nextRace = null;
-  for (const r of races) {
-    const rDate = new Date(r.dateStr);
+  for (const r of concreteRaces) {
+    const rDate = new Date(r.date);
     if (rDate >= today) { nextRace = r; break; }
   }
 
   const hero = document.getElementById('hero-race');
   if (nextRace) {
-    const diff = Math.ceil((new Date(nextRace.dateStr) - today) / (1000*60*60*24));
-    document.getElementById('next-race-name').textContent = cleanName(nextRace.name);
+    const diff = Math.ceil((new Date(nextRace.date) - today) / (1000*60*60*24));
+    document.getElementById('next-race-name').textContent = nextRace.name;
     document.getElementById('days-count').textContent = diff;
-    const dateLabel = nextRace.approx
-      ? nextRace.approxText
-      : `${nextRace.dateDisplay} ${nextRace.monthDisplay} ${nextRace.yearDisplay}`.toUpperCase();
-    const status = nextRace.confirmed
-      ? 'confirmée'
-      : (nextRace.tbdType === 'course' ? 'course à confirmer' : 'date à confirmer');
+    const d = new Date(nextRace.date);
+    const dateLabel = `${String(d.getUTCDate()).padStart(2,'0')} ${MONTHS_FR[d.getUTCMonth()]} ${d.getUTCFullYear()}`.toUpperCase();
+    const status = nextRace.confirmed ? 'confirmée' : 'date à confirmer';
     document.getElementById('next-race-meta').textContent =
-      `${dateLabel} · ${nextRace.format} · ${status}`;
+      `${dateLabel} · ${nextRace.type} · ${status}`;
     if (hero) hero.classList.toggle('is-urgent', diff < 7);
   }
 
   races.forEach(r => {
+    const isApprox = r.date === null;
     const card = document.createElement('div');
     card.className = 'race-card' + (r.pillar ? ' pillar' : '');
 
-    const dateHtml = r.approx
-      ? `<div class="race-date-approx">${r.approxText}</div>`
-      : `<div class="race-date-col">
-           <span class="day">${r.dateDisplay}</span>
-           <span class="month">${r.monthDisplay} ${r.yearDisplay}</span>
+    let dateHtml;
+    if (isApprox) {
+      dateHtml = `<div class="race-date-approx">${r.date_label}</div>`;
+    } else {
+      const d = new Date(r.date);
+      const day = String(d.getUTCDate()).padStart(2, '0');
+      const month = MONTHS_FR[d.getUTCMonth()];
+      const year = d.getUTCFullYear();
+      dateHtml = `<div class="race-date-col">
+           <span class="day">${day}</span>
+           <span class="month">${month} ${year}</span>
          </div>`;
+    }
 
     const pillarBadge = r.pillar ? `<span class="race-tag pillar-tag">Pilier</span>` : '';
-    const tbdLabel = r.tbdType === 'course' ? 'Course à confirmer' : 'Date à confirmer';
     const statusBadge = r.confirmed
       ? `<span class="badge-status badge-confirmed">Confirmée</span>`
-      : `<span class="badge-status badge-tbd">${tbdLabel}</span>`;
+      : `<span class="badge-status badge-tbd">Date à confirmer</span>`;
     const noteLine = r.note
       ? `<span class="race-tag italic">${r.note}</span>`
       : '';
@@ -1803,9 +1713,9 @@ function renderRaces() {
     card.innerHTML = `
       ${dateHtml}
       <div class="race-info">
-        <div class="race-name">${cleanName(r.name)}</div>
+        <div class="race-name">${r.name}</div>
         <div class="race-meta">
-          <span class="race-tag format">${r.format}</span>
+          <span class="race-tag format">${r.type}</span>
           ${pillarBadge}
           ${noteLine}
         </div>
@@ -1818,30 +1728,33 @@ function renderRaces() {
   });
 }
 
-renderRaces();
+document.addEventListener('supabase-ready', renderRaces);
 
 // ===================================================================
-// SESSION DATA — loaded from sessions.json
+// SESSION DATA — fetched from Supabase
 // ===================================================================
 let sessions = [];
 
-fetch('sessions.json')
-  .then(r => {
-    if (!r.ok) throw new Error('sessions.json not found');
-    return r.json();
-  })
-  .then(data => {
-    sessions = data;
-    const saved = localStorage.getItem('drc_vma');
-    if (saved) updateVMASummary(parseFloat(saved));
-    renderSessions(sessions);
-    renderNextSession(sessions[0]);
-  })
-  .catch(err => {
-    console.error('Could not load sessions.json:', err);
+async function loadSessions() {
+  const { data, error } = await window.supabase
+    .from('sessions')
+    .select('*')
+    .order('date', { ascending: false });
+
+  if (error) {
     document.getElementById('sessions-list').innerHTML =
-      '<p style="color:#c00;padding:20px">Erreur : impossible de charger les séances. Vérifiez que sessions.json est présent.</p>';
-  });
+      '<p class="data-error">Séances indisponibles. Réessayez dans un instant.</p>';
+    return;
+  }
+
+  sessions = data;
+  const saved = localStorage.getItem('drc_vma');
+  if (saved) updateVMASummary(parseFloat(saved));
+  renderSessions(sessions);
+  renderNextSession(sessions[0]);
+}
+
+document.addEventListener('supabase-ready', loadSessions);
 // ===================================================================
 // RENDER SESSIONS
 // ===================================================================
@@ -1972,6 +1885,51 @@ function filterSessions() {
   );
   renderSessions(filtered);
 }
+
+// ===================================================================
+// RESOURCE DATA — fetched from Supabase
+// ===================================================================
+async function loadResources() {
+  const { data: resources, error } = await window.supabase
+    .from('resources')
+    .select('*')
+    .order('display_order');
+
+  const list = document.getElementById('resource-list');
+  if (error) {
+    const errEl = document.createElement('p');
+    errEl.className = 'data-error';
+    errEl.textContent = 'Ressources indisponibles. Réessayez dans un instant.';
+    list.insertBefore(errEl, list.firstChild);
+    return;
+  }
+
+  // Insert dynamic cards before the static placeholder
+  const placeholder = list.querySelector('.is-placeholder');
+  resources.forEach(r => {
+    const card = document.createElement('div');
+    card.className = 'resource-card';
+
+    const previewHtml = r.preview_path
+      ? `<img class="resource-preview" src="${r.preview_path}" alt="Aperçu de ${r.title}" loading="lazy" />`
+      : `<div class="resource-preview-empty" aria-hidden="true">PDF</div>`;
+
+    card.innerHTML = `
+      ${previewHtml}
+      <div class="resource-body">
+        <h3>${r.title}</h3>
+        <p>${r.description}</p>
+        <div class="resource-actions-v2">
+          <a class="btn-v2" href="${r.pdf_path}" target="_blank" rel="noopener">Ouvrir</a>
+          <a class="btn-v2 secondary" href="${r.pdf_path}" download>Télécharger</a>
+        </div>
+      </div>`;
+
+    list.insertBefore(card, placeholder);
+  });
+}
+
+document.addEventListener('supabase-ready', loadResources);
 
 // ===================================================================
 // VMA CALCULATOR
