@@ -96,7 +96,7 @@ Specific messages (French):
 | Email placeholder | ton@email.fr |
 | Submit button | Recevoir le lien |
 | Confirmation heading | Vérifie ta boîte mail |
-| Confirmation body | Un lien de connexion vient d'être envoyé à [email]. Clique dessus pour te connecter — il est valable 10 minutes. |
+| Confirmation body | Un lien de connexion vient d'être envoyé à [email]. Clique dessus pour te connecter — il est valable 10 minutes. Si tu ne reçois rien, contacte l'administrateur du club. |
 | Resend link | Renvoyer le lien |
 | Change email link | Utiliser une autre adresse |
 | Profile form heading | Bienvenue chez DRC — complète ton profil |
@@ -109,6 +109,7 @@ Specific messages (French):
 | Error — network | Connexion impossible. Vérifie ta connexion et réessaie. |
 | Error — link expired | Ce lien a expiré. Demande un nouveau lien. |
 | Error — link used | Ce lien a déjà été utilisé. Demande un nouveau lien. |
+| Error — unauthorized email | Cette adresse n'est pas autorisée. Contacte l'administrateur du club. |
 | Error — profile save | Impossible d'enregistrer. Réessaie. |
 
 ## Visual direction

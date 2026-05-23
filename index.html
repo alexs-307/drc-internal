@@ -2242,9 +2242,12 @@ let _resendLockUntil = 0;
 
 async function sendMagicLink(email) {
   // EM CONFIG NOTE: Before this flow works end-to-end the Supabase dashboard must be configured:
-  //   Authentication → URL Configuration → Site URL: https://<owner>.github.io/drc-internal/
-  //   Authentication → URL Configuration → Redirect URLs: same URL (or the repo root).
-  //   Without this the magic-link callback returns to the wrong origin.
+  //   1. Authentication → URL Configuration → Site URL: https://<owner>.github.io/drc-internal/
+  //   2. Authentication → URL Configuration → Redirect URLs: same URL (or the repo root).
+  //   3. Authentication → Settings → toggle "Enable sign ups" OFF (invite-only).
+  //   4. Invite members via Authentication → Users → "Invite user" (enters their email).
+  //   Without (1)+(2) the magic-link callback returns to the wrong origin.
+  //   Without (3) anyone can self-register by entering any email on the Compte tab.
   const { error } = await window.supabase.auth.signInWithOtp({
     email,
     options: {
@@ -2270,7 +2273,9 @@ async function initAuth() {
       const error = await sendMagicLink(email);
       submitBtn.disabled = false;
       if (error) {
-        if (error.status === 429) {
+        if (error.message && /signup|sign.up|not allowed|disabled/i.test(error.message)) {
+          showAuthError('auth-signin-error', 'Cette adresse n\'est pas autorisée. Contacte l\'administrateur du club.');
+        } else if (error.status === 429) {
           showAuthError('auth-signin-error', 'Trop de tentatives. Réessaie dans quelques minutes.');
         } else if (error.message && /network|fetch/i.test(error.message)) {
           showAuthError('auth-signin-error', 'Connexion impossible. Vérifie ta connexion et réessaie.');
@@ -2302,7 +2307,9 @@ async function initAuth() {
       _resendLockUntil = Date.now() + 30000;
       const error = await sendMagicLink(email);
       if (error) {
-        if (error.status === 429) {
+        if (error.message && /signup|sign.up|not allowed|disabled/i.test(error.message)) {
+          showAuthError('auth-resend-error', 'Cette adresse n\'est pas autorisée. Contacte l\'administrateur du club.');
+        } else if (error.status === 429) {
           showAuthError('auth-resend-error', 'Trop de tentatives. Réessaie dans quelques minutes.');
         } else {
           showAuthError('auth-resend-error', 'Connexion impossible. Vérifie ta connexion et réessaie.');
@@ -2432,7 +2439,7 @@ function showPendingState(email) {
   clearAuthError('auth-signin-error');
   const bodyEl = getAuthEl('auth-confirm-body');
   if (bodyEl) {
-    bodyEl.textContent = `Un lien de connexion vient d'être envoyé à ${email}. Clique dessus pour te connecter — il est valable 10 minutes.`;
+    bodyEl.textContent = `Un lien de connexion vient d'être envoyé à ${email}. Clique dessus pour te connecter — il est valable 10 minutes. Si tu ne reçois rien, contacte l'administrateur du club.`;
   }
   showAuthState('auth-state-pending', 'Lien envoyé. Vérifie ta boîte mail.');
   const heading = getAuthEl('auth-confirm-heading');
