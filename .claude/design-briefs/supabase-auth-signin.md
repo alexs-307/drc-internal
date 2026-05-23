@@ -20,7 +20,11 @@ Add member authentication to `index.html`: a magic-link email sign-in, a "check 
 
 **No build pipeline, no bundler, no npm.** Vanilla JS, single `index.html`, inline styles. Supabase JS SDK already on the page via CDN ESM (PR 3). Auth calls use `supabase.auth.signInWithOtp()`, `supabase.auth.signOut()`, and `supabase.auth.onAuthStateChange()`. No new external dependencies.
 
-**EM config step (not a code change):** The Supabase dashboard → Authentication → URL Configuration → Site URL must be set to the GitHub Pages root (`https://<username>.github.io/drc-internal/`) and that same URL must be added to the Redirect URLs allowlist. The implementer does not handle this — flag it in a code comment near the `signInWithOtp` call.
+**EM config steps (not code changes):**
+1. Supabase dashboard → Authentication → URL Configuration → Site URL = GitHub Pages root (`https://<username>.github.io/drc-internal/`), same URL added to Redirect URLs allowlist.
+2. Authentication → Settings → toggle "Enable sign ups" OFF (invite-only).
+3. **Custom SMTP (recommended before inviting members):** Supabase's built-in mailer is rate-limited (~4 emails/hour on the free tier). For 45 members, set up a free SMTP provider (e.g. [Resend](https://resend.com), 3,000 emails/month free) in Authentication → SMTP Settings before sending invites. This removes the built-in rate limit and improves deliverability for all future auth emails (invites + magic links).
+4. Invite members via Authentication → Users → "Invite user".
 
 ## Entry point decision: a fifth "Compte" tab
 

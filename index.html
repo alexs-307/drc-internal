@@ -2245,7 +2245,9 @@ async function sendMagicLink(email) {
   //   1. Authentication → URL Configuration → Site URL: https://<owner>.github.io/drc-internal/
   //   2. Authentication → URL Configuration → Redirect URLs: same URL (or the repo root).
   //   3. Authentication → Settings → toggle "Enable sign ups" OFF (invite-only).
-  //   4. Invite members via Authentication → Users → "Invite user" (enters their email).
+  //   4. Authentication → SMTP Settings: configure a custom SMTP (e.g. Resend) to avoid the
+  //      built-in mailer's ~4 emails/hour rate limit. Required before bulk-inviting members.
+  //   5. Invite members via Authentication → Users → "Invite user" (enters their email).
   //   Without (1)+(2) the magic-link callback returns to the wrong origin.
   //   Without (3) anyone can self-register by entering any email on the Compte tab.
   const { error } = await window.supabase.auth.signInWithOtp({
