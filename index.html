@@ -1871,9 +1871,14 @@
   const supabase = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
   window.supabase = supabase;
 
+  // Always signal that the Supabase client is initialized so initAuth() can
+  // attach onAuthStateChange and sign-in form handlers, regardless of session
+  // state. Anonymous visitors need this to make the sign-in form functional.
+  document.dispatchEvent(new CustomEvent('supabase-client-ready'));
+
   // Resolve auth state before revealing the page.
-  // Option (b): only dispatch 'supabase-ready' when authenticated so the three
-  // data fetchers (renderRaces, loadSessions, loadResources) never run for
+  // Only dispatch 'supabase-ready' when authenticated so the three data
+  // fetchers (renderRaces, loadSessions, loadResources) never run for
   // anonymous visitors — avoids empty-data flashes and unnecessary network calls.
   const { data: { session } } = await supabase.auth.getSession();
   document.body.classList.remove('is-loading');
@@ -1882,12 +1887,14 @@
     // Mark data fetchers as already triggered so onAuthStateChange SIGNED_IN
     // does not re-fire them when it runs immediately after this (session already live).
     window._dataFetchersTriggered = true;
-    // Signal to the non-module script that the client is ready and user is authenticated
+    // Signal to the non-module script that the client is ready and user is authenticated.
     document.dispatchEvent(new CustomEvent('supabase-ready'));
   } else {
     document.body.classList.add('is-anonymous');
     window._dataFetchersTriggered = false;
-    // Do NOT dispatch 'supabase-ready' — data fetchers must not run for anonymous visitors
+    // Do NOT dispatch 'supabase-ready' — data fetchers must not run for anonymous visitors.
+    // 'supabase-client-ready' was already dispatched above, so initAuth() will run
+    // and the sign-in form will be functional.
   }
 </script>
 
@@ -2530,7 +2537,7 @@ function showSignedInState(firstName, email) {
   showAuthState('auth-state-signedin', firstName ? `Bonjour ${firstName}.` : 'Connecté.');
 }
 
-document.addEventListener('supabase-ready', () => { initAuth(); });
+document.addEventListener('supabase-client-ready', () => { initAuth(); });
 
 // ===================================================================
 // VMA CALCULATOR
