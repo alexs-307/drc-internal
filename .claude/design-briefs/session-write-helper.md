@@ -29,11 +29,11 @@ A POSIX-friendly bash script (`#!/usr/bin/env bash`, `set -euo pipefail`) that:
 5. **Inspects the response.** If the response is a JSON object with a `code` field (PostgREST error shape), prints the error to stderr (with the row's `date` value for context, but NOT the secret key) and exits with code 1. If the response is a JSON array of one row with a UUID, prints the UUID to stdout (single line, no trailing whitespace) and exits with code 0.
 6. **Never logs the secret key.** Not in error messages, not in verbose mode, not anywhere. Use `set +x` if you ever turn on tracing for debugging.
 
-### `scripts/README.md`
+### `supabase/scripts/README.md`
 
 Brief documentation (about 40-60 lines) covering:
 
-- **Purpose** of the `scripts/` folder: local helpers for one-shot ops against the Supabase database. Not part of the deployed site.
+- **Purpose** of the `supabase/scripts/` folder: local helpers for one-shot ops against the Supabase database. Not part of the deployed site.
 - **Prerequisites:**
   - `curl` (ships with macOS)
   - `jq` — `brew install jq` if not already present
@@ -64,7 +64,7 @@ Brief documentation (about 40-60 lines) covering:
 - [ ] Script exits non-zero with a clear stderr message when input JSON is missing, malformed, or missing any of `date`/`label`/`venue`/`g12`
 - [ ] On success, script prints exactly the inserted row's UUID to stdout (no other text on stdout)
 - [ ] Script never echoes or logs `SUPABASE_SECRET_KEY` — grep the script for any pattern that could leak it (echo, printf, set -x without restore, etc.)
-- [ ] `scripts/README.md` exists with all sections listed above
+- [ ] `supabase/scripts/README.md` exists with all sections listed above
 - [ ] No secrets in either file (placeholder examples use `sb_secret_xxxxxxxx` style)
 - [ ] File mode on `insert_session.sh` is either `0644` (sourced/invoked via `bash`) or `0755` (also directly executable) — either is fine, just be consistent and document it
 
