@@ -1881,7 +1881,22 @@
   // Only dispatch 'supabase-ready' when authenticated so the three data
   // fetchers (renderRaces, loadSessions, loadResources) never run for
   // anonymous visitors — avoids empty-data flashes and unnecessary network calls.
-  const { data: { session } } = await supabase.auth.getSession();
+  // Defensive: if getSession hangs or throws (e.g. stale session token,
+  // SDK refresh call stuck), fall back to anonymous so the page never
+  // gets stuck on the is-loading blank state. Worst case: user sees the
+  // sign-in card and can re-authenticate.
+  let session = null;
+  try {
+    const sessionPromise = supabase.auth.getSession();
+    const timeoutPromise = new Promise((_, reject) =>
+      setTimeout(() => reject(new Error('getSession timeout (3s)')), 3000)
+    );
+    const result = await Promise.race([sessionPromise, timeoutPromise]);
+    session = result.data.session;
+  } catch (e) {
+    console.error('Supabase getSession failed or timed out; defaulting to anonymous view.', e);
+    // session stays null → user gets the anonymous view
+  }
   document.body.classList.remove('is-loading');
   if (session) {
     document.body.classList.add('is-authenticated');
