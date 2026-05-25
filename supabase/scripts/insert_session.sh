@@ -2,8 +2,8 @@
 # insert_session.sh — Insert a single row into public.sessions via PostgREST.
 #
 # Usage:
-#   echo "$JSON" | bash scripts/insert_session.sh      # stdin form (preferred)
-#   bash scripts/insert_session.sh "$JSON"             # argument form
+#   printf '%s' "$JSON" | bash supabase/scripts/insert_session.sh   # stdin form (preferred)
+#   bash supabase/scripts/insert_session.sh "$JSON"                 # argument form
 #
 # On success: prints the inserted row's UUID to stdout (single line), exits 0.
 # On failure: prints a diagnostic message to stderr, exits 1 (API error)
@@ -42,8 +42,8 @@ fi
 
 if [[ -z "$BODY" ]]; then
   echo "error: no session JSON provided." >&2
-  echo "       Usage: echo \"\$JSON\" | bash scripts/insert_session.sh" >&2
-  echo "          or: bash scripts/insert_session.sh \"\$JSON\"" >&2
+  echo "       Usage: printf '%s' \"\$JSON\" | bash supabase/scripts/insert_session.sh" >&2
+  echo "          or: bash supabase/scripts/insert_session.sh \"\$JSON\"" >&2
   exit 2
 fi
 

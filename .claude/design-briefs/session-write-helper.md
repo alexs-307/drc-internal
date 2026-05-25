@@ -14,7 +14,7 @@ Alexandre will drive this from his phone via Remote Control — the skill runs o
 
 ## What to write
 
-### `scripts/insert_session.sh`
+### `supabase/scripts/insert_session.sh`
 
 A POSIX-friendly bash script (`#!/usr/bin/env bash`, `set -euo pipefail`) that:
 
@@ -43,8 +43,8 @@ Brief documentation (about 40-60 lines) covering:
   - The skill (in the DRC parent project) sources this file before invoking the helper. The user can also `source ~/.config/drc/.env` interactively to call the helper from the shell.
   - **NEVER commit `.env` files anywhere.** The repo's `.gitignore` already excludes `.env`.
 - **`insert_session.sh` usage:**
-  - Stdin form (preferred): `echo "$JSON" | bash scripts/insert_session.sh`
-  - Argument form: `bash scripts/insert_session.sh "$JSON"`
+  - Stdin form (preferred): `echo "$JSON" | bash supabase/scripts/insert_session.sh`
+  - Argument form: `bash supabase/scripts/insert_session.sh "$JSON"`
   - Show one realistic example with a multi-line `g12` (so the apostrophe/newline handling is illustrated)
   - Show the expected success output (a UUID on stdout) and a sample error response
 - **What's NOT in this folder yet:**
@@ -55,11 +55,11 @@ Brief documentation (about 40-60 lines) covering:
 - Do NOT include the secret key in any file. The `.env` file is created out-of-band by Alexandre after the PR merges.
 - Do NOT touch `index.html`, `sessions.json` (which doesn't exist anyway), or any migration file.
 - Do NOT introduce new external dependencies beyond `curl` and `jq`. No node_modules, no Python packages, no extra binaries.
-- Do NOT add executable bit logic — `bash scripts/insert_session.sh` is the documented invocation. (You can mark the file executable with `chmod +x` and the script can also be run directly, but document the `bash <path>` form for portability.)
+- Do NOT add executable bit logic — `bash supabase/scripts/insert_session.sh` is the documented invocation. (You can mark the file executable with `chmod +x` and the script can also be run directly, but document the `bash <path>` form for portability.)
 
 ## Acceptance criteria
 
-- [ ] `scripts/insert_session.sh` exists, starts with `#!/usr/bin/env bash` and `set -euo pipefail`
+- [ ] `supabase/scripts/insert_session.sh` exists, starts with `#!/usr/bin/env bash` and `set -euo pipefail`
 - [ ] Script exits non-zero with a clear stderr message when `SUPABASE_SECRET_KEY` is unset
 - [ ] Script exits non-zero with a clear stderr message when input JSON is missing, malformed, or missing any of `date`/`label`/`venue`/`g12`
 - [ ] On success, script prints exactly the inserted row's UUID to stdout (no other text on stdout)
@@ -79,7 +79,7 @@ The script can't be fully tested against the live database without the real secr
 
 ## Commit
 
-Commit message: `backend: helper for inserting a session row (scripts/insert_session.sh)`. Do NOT push — EM pushes after reviewer signs off.
+Commit message: `backend: helper for inserting a session row (supabase/scripts/insert_session.sh)`. Do NOT push — EM pushes after reviewer signs off.
 
 ## Report back
 

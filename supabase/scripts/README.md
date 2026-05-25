@@ -1,8 +1,13 @@
-# scripts/
+# supabase/scripts/
 
 Local helper scripts for one-shot operations against the Supabase database.
 These scripts are **not** part of the deployed site — they run on Alexandre's Mac
 and communicate directly with Supabase via the PostgREST API.
+
+This folder lives under `supabase/` (next to `migrations/`) because every script
+here is coupled to the Supabase schema and credentials. For generic project
+tooling not coupled to the DB (deploy, content conversion, etc.), use a
+root-level `scripts/` folder if one is ever introduced.
 
 ---
 
@@ -63,7 +68,7 @@ apostrophes or newlines, and does not expose the payload in the process listing.
 
 ```bash
 source ~/.config/drc/.env
-printf '%s' "$JSON" | bash scripts/insert_session.sh
+printf '%s' "$JSON" | bash supabase/scripts/insert_session.sh
 ```
 
 Note: we use `printf '%s'` instead of `echo` because zsh's built-in `echo` interprets `\n` escape sequences and would corrupt JSON containing them.
@@ -72,7 +77,7 @@ Note: we use `printf '%s'` instead of `echo` because zsh's built-in `echo` inter
 
 ```bash
 source ~/.config/drc/.env
-bash scripts/insert_session.sh "$JSON"
+bash supabase/scripts/insert_session.sh "$JSON"
 ```
 
 ### Required JSON fields
@@ -105,7 +110,7 @@ JSON=$(cat <<'EOF'
 EOF
 )
 
-printf '%s' "$JSON" | bash scripts/insert_session.sh
+printf '%s' "$JSON" | bash supabase/scripts/insert_session.sh
 ```
 
 Expected output on success (stdout only):
