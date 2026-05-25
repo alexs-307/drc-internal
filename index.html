@@ -1527,16 +1527,17 @@
   body.is-loading > main,
   body.is-loading > footer { visibility: hidden; }
 
-  /* Anonymous — hide nav and all content tabs except #tab-compte */
-  body.is-anonymous > nav { display: none; }
-  body.is-anonymous .tab-panel { display: none !important; }
-  body.is-anonymous #tab-compte {
-    display: block !important;
-    max-width: 420px;
-    margin: 48px auto 0;
-    padding: 0 16px;
+  /* Anonymous — show Saison 01 and Compte; hide the three gated tabs */
+  body.is-anonymous nav .tab-btn[data-tab="calendar"],
+  body.is-anonymous nav .tab-btn[data-tab="sessions"],
+  body.is-anonymous nav .tab-btn[data-tab="resources"] {
+    display: none;
   }
-  body.is-anonymous > footer { display: none; }
+  body.is-anonymous #tab-calendar,
+  body.is-anonymous #tab-sessions,
+  body.is-anonymous #tab-resources {
+    display: none !important;
+  }
 
   /* Authenticated — explicit no-op; default styles apply */
   /* body.is-authenticated nav, .tab-panel.active behave as today */
@@ -1880,7 +1881,22 @@
   // Only dispatch 'supabase-ready' when authenticated so the three data
   // fetchers (renderRaces, loadSessions, loadResources) never run for
   // anonymous visitors — avoids empty-data flashes and unnecessary network calls.
-  const { data: { session } } = await supabase.auth.getSession();
+  // Defensive: if getSession hangs or throws (e.g. stale session token,
+  // SDK refresh call stuck), fall back to anonymous so the page never
+  // gets stuck on the is-loading blank state. Worst case: user sees the
+  // sign-in card and can re-authenticate.
+  let session = null;
+  try {
+    const sessionPromise = supabase.auth.getSession();
+    const timeoutPromise = new Promise((_, reject) =>
+      setTimeout(() => reject(new Error('getSession timeout (3s)')), 3000)
+    );
+    const result = await Promise.race([sessionPromise, timeoutPromise]);
+    session = result.data.session;
+  } catch (e) {
+    console.error('Supabase getSession failed or timed out; defaulting to anonymous view.', e);
+    // session stays null → user gets the anonymous view
+  }
   document.body.classList.remove('is-loading');
   if (session) {
     document.body.classList.add('is-authenticated');
@@ -1895,6 +1911,17 @@
     // Do NOT dispatch 'supabase-ready' — data fetchers must not run for anonymous visitors.
     // 'supabase-client-ready' was already dispatched above, so initAuth() will run
     // and the sign-in form will be functional.
+    // Switch default active tab to Saison 01 (calendar is active by default in HTML).
+    // activateTab() is defined in the classic script and not yet available here, so
+    // manipulate the DOM directly.
+    const calBtn = document.querySelector('.tab-btn[data-tab="calendar"]');
+    const saisonBtn = document.querySelector('.tab-btn[data-tab="saison"]');
+    const calPanel = document.getElementById('tab-calendar');
+    const saisonPanel = document.getElementById('tab-saison');
+    if (calBtn) calBtn.classList.remove('active');
+    if (saisonBtn) saisonBtn.classList.add('active');
+    if (calPanel) calPanel.classList.remove('active');
+    if (saisonPanel) saisonPanel.classList.add('active');
   }
 </script>
 
@@ -2419,14 +2446,37 @@ async function initAuth() {
     });
   }
 
-  // Attach sign-out button
-  const signoutBtn = getAuthEl('auth-signout-btn');
-  if (signoutBtn) {
-    signoutBtn.addEventListener('click', async () => {
-      signoutBtn.disabled = true;
-      await window.supabase.auth.signOut();
-      signoutBtn.disabled = false;
-      // onAuthStateChange SIGNED_OUT handler will update the UI
+  // Attach sign-out button — event delegation so the listener survives any DOM
+  // mutation of the button (e.g. innerHTML replacement elsewhere in initAuth).
+  // The flag prevents double-attachment if initAuth() is ever re-entered.
+  if (!window._signoutDelegateAttached) {
+    window._signoutDelegateAttached = true;
+    document.addEventListener('click', async (e) => {
+      const btn = e.target && e.target.closest && e.target.closest('#auth-signout-btn');
+      if (!btn) return;
+      if (btn.disabled) return;
+      btn.disabled = true;
+      try {
+        const { error } = await window.supabase.auth.signOut();
+        if (error) {
+          console.error('[DRC] supabase.auth.signOut returned error:', error);
+        }
+        // Defensive manual fallback: if onAuthStateChange SIGNED_OUT hasn't fired
+        // within 400ms, force the UI to the signed-out state ourselves.
+        setTimeout(() => {
+          if (document.body.classList.contains('is-authenticated')) {
+            console.warn('[DRC] SIGNED_OUT did not fire; forcing UI to signed-out state.');
+            document.body.classList.remove('is-authenticated', 'is-loading');
+            document.body.classList.add('is-anonymous');
+            if (typeof activateTab === 'function') activateTab('saison');
+            if (typeof showAuthState === 'function') showAuthState('auth-state-signout', 'Déconnecté.');
+          }
+        }, 400);
+      } catch (err) {
+        console.error('[DRC] supabase.auth.signOut threw:', err);
+      } finally {
+        btn.disabled = false;
+      }
     });
   }
 
@@ -2449,6 +2499,7 @@ async function initAuth() {
       // Body-class management (PR 5 gate)
       document.body.classList.remove('is-authenticated', 'is-loading');
       document.body.classList.add('is-anonymous');
+      activateTab('saison'); // switch to Saison 01 — anonymous users can't see Calendrier
       showAuthState('auth-state-signout', 'Déconnecté.');
     } else if (event === 'TOKEN_REFRESHED') {
       // silent — no UI change needed
