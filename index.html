@@ -2446,14 +2446,37 @@ async function initAuth() {
     });
   }
 
-  // Attach sign-out button
-  const signoutBtn = getAuthEl('auth-signout-btn');
-  if (signoutBtn) {
-    signoutBtn.addEventListener('click', async () => {
-      signoutBtn.disabled = true;
-      await window.supabase.auth.signOut();
-      signoutBtn.disabled = false;
-      // onAuthStateChange SIGNED_OUT handler will update the UI
+  // Attach sign-out button — event delegation so the listener survives any DOM
+  // mutation of the button (e.g. innerHTML replacement elsewhere in initAuth).
+  // The flag prevents double-attachment if initAuth() is ever re-entered.
+  if (!window._signoutDelegateAttached) {
+    window._signoutDelegateAttached = true;
+    document.addEventListener('click', async (e) => {
+      const btn = e.target && e.target.closest && e.target.closest('#auth-signout-btn');
+      if (!btn) return;
+      if (btn.disabled) return;
+      btn.disabled = true;
+      try {
+        const { error } = await window.supabase.auth.signOut();
+        if (error) {
+          console.error('[DRC] supabase.auth.signOut returned error:', error);
+        }
+        // Defensive manual fallback: if onAuthStateChange SIGNED_OUT hasn't fired
+        // within 400ms, force the UI to the signed-out state ourselves.
+        setTimeout(() => {
+          if (document.body.classList.contains('is-authenticated')) {
+            console.warn('[DRC] SIGNED_OUT did not fire; forcing UI to signed-out state.');
+            document.body.classList.remove('is-authenticated', 'is-loading');
+            document.body.classList.add('is-anonymous');
+            if (typeof activateTab === 'function') activateTab('saison');
+            if (typeof showAuthState === 'function') showAuthState('auth-state-signout', 'Déconnecté.');
+          }
+        }, 400);
+      } catch (err) {
+        console.error('[DRC] supabase.auth.signOut threw:', err);
+      } finally {
+        btn.disabled = false;
+      }
     });
   }
 
