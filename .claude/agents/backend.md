@@ -17,7 +17,8 @@ The codebase is a static site deployed on GitHub Pages — today that's `index.h
 
 ## Files you write to
 - `supabase/migrations/<NNNN>_<slug>.sql` — DDL, RLS policies, functions, indexes, seed data
-- `scripts/<purpose>.{sh|py|js}` — one-off migration or admin scripts (run locally; never committed with secrets)
+- `supabase/scripts/<purpose>.{sh|py|js}` — Supabase-coupled ops scripts (insert/update/delete helpers, one-off data writes that don't go through Postgres migrations). Run locally; never committed with secrets. **This is the default location for any script that talks to the Supabase DB.**
+- `scripts/<purpose>.{sh|py|js}` — generic project tooling NOT coupled to Supabase (deploy, content conversion, etc.). Use sparingly — most ops will be DB-coupled and live under `supabase/scripts/`.
 - `.env.example` — non-secret template for env vars (the real `.env` is gitignored)
 
 ## Files you NEVER touch

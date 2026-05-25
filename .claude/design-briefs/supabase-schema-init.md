@@ -100,7 +100,7 @@ Create a Postgres trigger on `auth.users` insert that automatically creates a co
 
 - **`.gitignore`** must include `.env` (add if not present).
 
-- **`supabase/README.md`** (short) explaining: how to apply migrations (paste into Supabase SQL editor, or use `supabase db push` if the CLI is set up later), naming convention (`NNNN_slug.sql`), append-only rule.
+- **`supabase/migrations/README.md`** (short) explaining: how to apply migrations (paste into Supabase SQL editor, or use `supabase db push` if the CLI is set up later), naming convention (`NNNN_slug.sql`), append-only rule.
 
 ## Acceptance criteria
 
@@ -112,7 +112,7 @@ Create a Postgres trigger on `auth.users` insert that automatically creates a co
 - [ ] No service role key, JWT, password, or other secret appears in any committed file (grep the diff)
 - [ ] `.env.example` exists with placeholders only
 - [ ] `.gitignore` excludes `.env`
-- [ ] `supabase/README.md` exists with apply instructions
+- [ ] `supabase/migrations/README.md` exists with apply instructions
 - [ ] The migration file ends with a comment block describing how to roll it back (drop tables in reverse FK order)
 
 ## Out of scope (later PRs)
