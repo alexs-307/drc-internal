@@ -1527,16 +1527,17 @@
   body.is-loading > main,
   body.is-loading > footer { visibility: hidden; }
 
-  /* Anonymous — hide nav and all content tabs except #tab-compte */
-  body.is-anonymous > nav { display: none; }
-  body.is-anonymous .tab-panel { display: none !important; }
-  body.is-anonymous #tab-compte {
-    display: block !important;
-    max-width: 420px;
-    margin: 48px auto 0;
-    padding: 0 16px;
+  /* Anonymous — show Saison 01 and Compte; hide the three gated tabs */
+  body.is-anonymous nav .tab-btn[data-tab="calendar"],
+  body.is-anonymous nav .tab-btn[data-tab="sessions"],
+  body.is-anonymous nav .tab-btn[data-tab="resources"] {
+    display: none;
   }
-  body.is-anonymous > footer { display: none; }
+  body.is-anonymous #tab-calendar,
+  body.is-anonymous #tab-sessions,
+  body.is-anonymous #tab-resources {
+    display: none !important;
+  }
 
   /* Authenticated — explicit no-op; default styles apply */
   /* body.is-authenticated nav, .tab-panel.active behave as today */
@@ -1895,6 +1896,17 @@
     // Do NOT dispatch 'supabase-ready' — data fetchers must not run for anonymous visitors.
     // 'supabase-client-ready' was already dispatched above, so initAuth() will run
     // and the sign-in form will be functional.
+    // Switch default active tab to Saison 01 (calendar is active by default in HTML).
+    // activateTab() is defined in the classic script and not yet available here, so
+    // manipulate the DOM directly.
+    const calBtn = document.querySelector('.tab-btn[data-tab="calendar"]');
+    const saisonBtn = document.querySelector('.tab-btn[data-tab="saison"]');
+    const calPanel = document.getElementById('tab-calendar');
+    const saisonPanel = document.getElementById('tab-saison');
+    if (calBtn) calBtn.classList.remove('active');
+    if (saisonBtn) saisonBtn.classList.add('active');
+    if (calPanel) calPanel.classList.remove('active');
+    if (saisonPanel) saisonPanel.classList.add('active');
   }
 </script>
 
@@ -2449,6 +2461,7 @@ async function initAuth() {
       // Body-class management (PR 5 gate)
       document.body.classList.remove('is-authenticated', 'is-loading');
       document.body.classList.add('is-anonymous');
+      activateTab('saison'); // switch to Saison 01 — anonymous users can't see Calendrier
       showAuthState('auth-state-signout', 'Déconnecté.');
     } else if (event === 'TOKEN_REFRESHED') {
       // silent — no UI change needed
