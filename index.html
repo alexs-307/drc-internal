@@ -1518,9 +1518,38 @@
   /* Form field group spacing */
   .auth-field-group { margin-bottom: 16px; }
   .auth-field-group .auth-input { margin-bottom: 0; }
+
+  /* === MEMBERS-ONLY GATE — PR 5 === */
+
+  /* Loading state — fully blank while the auth check resolves */
+  body.is-loading > header,
+  body.is-loading > nav,
+  body.is-loading > main,
+  body.is-loading > footer { visibility: hidden; }
+
+  /* Anonymous — hide nav and all content tabs except #tab-compte */
+  body.is-anonymous > nav { display: none; }
+  body.is-anonymous .tab-panel { display: none !important; }
+  body.is-anonymous #tab-compte {
+    display: block !important;
+    max-width: 420px;
+    margin: 48px auto 0;
+    padding: 0 16px;
+  }
+  body.is-anonymous > footer { display: none; }
+
+  /* Authenticated — explicit no-op; default styles apply */
+  /* body.is-authenticated nav, .tab-panel.active behave as today */
+
+  .auth-help {
+    color: var(--text-muted);
+    font-size: 0.9rem;
+    margin-top: 16px;
+    text-align: center;
+  }
 </style>
 </head>
-<body>
+<body class="is-loading">
 
 <!-- ===== HEADER ===== -->
 <header>
@@ -1770,6 +1799,7 @@
         </div>
         <button class="auth-btn-primary" id="auth-submit-btn" type="button">Recevoir le lien</button>
         <p class="auth-error" id="auth-signin-error"></p>
+        <p class="auth-help">Pas encore membre ? Contacte Alexandre (sports director) pour rejoindre le club.</p>
       </div>
 
       <!-- STATE: awaiting email confirmation -->
@@ -1840,8 +1870,32 @@
 
   const supabase = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
   window.supabase = supabase;
-  // Signal to the non-module script that the client is ready
-  document.dispatchEvent(new CustomEvent('supabase-ready'));
+
+  // Always signal that the Supabase client is initialized so initAuth() can
+  // attach onAuthStateChange and sign-in form handlers, regardless of session
+  // state. Anonymous visitors need this to make the sign-in form functional.
+  document.dispatchEvent(new CustomEvent('supabase-client-ready'));
+
+  // Resolve auth state before revealing the page.
+  // Only dispatch 'supabase-ready' when authenticated so the three data
+  // fetchers (renderRaces, loadSessions, loadResources) never run for
+  // anonymous visitors — avoids empty-data flashes and unnecessary network calls.
+  const { data: { session } } = await supabase.auth.getSession();
+  document.body.classList.remove('is-loading');
+  if (session) {
+    document.body.classList.add('is-authenticated');
+    // Mark data fetchers as already triggered so onAuthStateChange SIGNED_IN
+    // does not re-fire them when it runs immediately after this (session already live).
+    window._dataFetchersTriggered = true;
+    // Signal to the non-module script that the client is ready and user is authenticated.
+    document.dispatchEvent(new CustomEvent('supabase-ready'));
+  } else {
+    document.body.classList.add('is-anonymous');
+    window._dataFetchersTriggered = false;
+    // Do NOT dispatch 'supabase-ready' — data fetchers must not run for anonymous visitors.
+    // 'supabase-client-ready' was already dispatched above, so initAuth() will run
+    // and the sign-in form will be functional.
+  }
 </script>
 
 <script>
@@ -2379,8 +2433,22 @@ async function initAuth() {
   // Wire auth state changes
   window.supabase.auth.onAuthStateChange(async (event, session) => {
     if (event === 'SIGNED_IN' && session) {
+      // Body-class management (PR 5 gate)
+      document.body.classList.remove('is-anonymous', 'is-loading');
+      document.body.classList.add('is-authenticated');
+      // Trigger data fetchers only once per page session.
+      // window._dataFetchersTriggered is set to true by the module script when a
+      // session already exists at page load (preventing a double-dispatch on the
+      // initial SIGNED_IN event that fires right after getSession()).
+      if (!window._dataFetchersTriggered) {
+        window._dataFetchersTriggered = true;
+        document.dispatchEvent(new CustomEvent('supabase-ready'));
+      }
       await handleSignedIn(session.user);
     } else if (event === 'SIGNED_OUT') {
+      // Body-class management (PR 5 gate)
+      document.body.classList.remove('is-authenticated', 'is-loading');
+      document.body.classList.add('is-anonymous');
       showAuthState('auth-state-signout', 'Déconnecté.');
     } else if (event === 'TOKEN_REFRESHED') {
       // silent — no UI change needed
@@ -2469,7 +2537,7 @@ function showSignedInState(firstName, email) {
   showAuthState('auth-state-signedin', firstName ? `Bonjour ${firstName}.` : 'Connecté.');
 }
 
-document.addEventListener('supabase-ready', () => { initAuth(); });
+document.addEventListener('supabase-client-ready', () => { initAuth(); });
 
 // ===================================================================
 // VMA CALCULATOR
