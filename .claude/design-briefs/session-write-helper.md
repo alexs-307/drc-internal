@@ -38,9 +38,9 @@ Brief documentation (about 40-60 lines) covering:
   - `curl` (ships with macOS)
   - `jq` — `brew install jq` if not already present
 - **The `SUPABASE_SECRET_KEY` env var:**
-  - Lives in `~/.config/drc/.env` with permissions `600`
+  - Lives in `drc-internal/.env` with permissions `600`
   - File format: `export SUPABASE_SECRET_KEY=sb_secret_...`
-  - The skill (in the DRC parent project) sources this file before invoking the helper. The user can also `source ~/.config/drc/.env` interactively to call the helper from the shell.
+  - The skill (in the DRC parent project) sources this file before invoking the helper. The user can also `source drc-internal/.env` interactively to call the helper from the shell.
   - **NEVER commit `.env` files anywhere.** The repo's `.gitignore` already excludes `.env`.
 - **`insert_session.sh` usage:**
   - Stdin form (preferred): `echo "$JSON" | bash supabase/scripts/insert_session.sh`
