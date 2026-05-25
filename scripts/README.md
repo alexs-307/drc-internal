@@ -63,8 +63,10 @@ apostrophes or newlines, and does not expose the payload in the process listing.
 
 ```bash
 source ~/.config/drc/.env
-echo "$JSON" | bash scripts/insert_session.sh
+printf '%s' "$JSON" | bash scripts/insert_session.sh
 ```
+
+Note: we use `printf '%s'` instead of `echo` because zsh's built-in `echo` interprets `\n` escape sequences and would corrupt JSON containing them.
 
 **Argument form:** JSON is passed as the first positional argument.
 
@@ -103,7 +105,7 @@ JSON=$(cat <<'EOF'
 EOF
 )
 
-echo "$JSON" | bash scripts/insert_session.sh
+printf '%s' "$JSON" | bash scripts/insert_session.sh
 ```
 
 Expected output on success (stdout only):
