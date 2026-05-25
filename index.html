@@ -1355,6 +1355,169 @@
     border-top: 1px solid var(--border);
     margin: 16px 0;
   }
+
+  /* ===== TAB 5 — COMPTE (auth) ===== */
+  .auth-panel {
+    max-width: 480px;
+    margin: 40px auto 0;
+  }
+  .auth-panel-title {
+    font-family: var(--font-sub);
+    text-transform: uppercase;
+    font-size: clamp(28px, 5vw, 38px);
+    line-height: 1;
+    margin-bottom: 6px;
+    letter-spacing: 0.01em;
+  }
+  .auth-panel-desc {
+    color: var(--text-muted);
+    font-size: 0.9rem;
+    margin-bottom: 28px;
+  }
+  .auth-form-label {
+    display: block;
+    font-family: var(--font-mono);
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--graphite);
+    margin-bottom: 6px;
+  }
+  .auth-input {
+    display: block;
+    width: 100%;
+    padding: 11px 14px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    font-family: var(--font-body);
+    font-size: 0.95rem;
+    color: var(--text);
+    background: var(--white);
+    outline: none;
+    transition: border-color 0.15s, box-shadow 0.15s;
+    margin-bottom: 14px;
+  }
+  .auth-input:focus {
+    border-color: var(--blue);
+    box-shadow: 0 0 0 3px rgba(0,30,255,0.08);
+  }
+  .auth-btn-primary {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    padding: 12px 20px;
+    background: var(--blue);
+    color: var(--white);
+    border: none;
+    border-radius: var(--radius-sm);
+    font-family: var(--font-mono);
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  .auth-btn-primary:hover { background: var(--blue-light); }
+  .auth-btn-primary:disabled {
+    background: var(--bone);
+    color: var(--graphite);
+    cursor: not-allowed;
+  }
+  .auth-btn-secondary {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    padding: 11px 20px;
+    background: transparent;
+    color: var(--blue);
+    border: 1.5px solid var(--blue);
+    border-radius: var(--radius-sm);
+    font-family: var(--font-mono);
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  .auth-btn-secondary:hover { background: var(--blue-faint); }
+  .auth-error {
+    color: var(--text-muted);
+    font-size: 0.82rem;
+    margin-top: 10px;
+    display: none;
+  }
+  .auth-error.visible { display: block; }
+
+  /* Confirmation panel */
+  .auth-confirm-icon {
+    display: block;
+    margin: 0 0 18px;
+  }
+  .auth-confirm-body {
+    color: var(--graphite);
+    font-size: 0.9rem;
+    margin-bottom: 22px;
+    line-height: 1.6;
+  }
+  .auth-resend-row {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 16px;
+  }
+  .auth-link-btn {
+    background: none;
+    border: none;
+    color: var(--blue);
+    font-family: var(--font-mono);
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    cursor: pointer;
+    padding: 0;
+    text-align: left;
+    transition: opacity 0.15s;
+  }
+  .auth-link-btn:disabled {
+    color: var(--graphite);
+    cursor: not-allowed;
+    opacity: 0.55;
+  }
+  .auth-link-btn:not(:disabled):hover { opacity: 0.7; }
+
+  /* Signed-in panel */
+  .auth-member-name {
+    font-family: var(--font-sub);
+    text-transform: uppercase;
+    font-size: 28px;
+    line-height: 1;
+    margin-bottom: 6px;
+    letter-spacing: 0.01em;
+  }
+  .auth-member-email {
+    color: var(--text-muted);
+    font-size: 0.88rem;
+    margin-bottom: 28px;
+  }
+
+  /* State transitions */
+  .auth-state {
+    transition: opacity 0.18s ease;
+  }
+  .auth-state.fading {
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  /* Form field group spacing */
+  .auth-field-group { margin-bottom: 16px; }
+  .auth-field-group .auth-input { margin-bottom: 0; }
 </style>
 </head>
 <body>
@@ -1414,6 +1577,13 @@
       <line x1="7" y1="19" x2="14" y2="19"/>
     </svg>
     <span>Ressources</span>
+  </button>
+  <button class="tab-btn" data-tab="compte" type="button">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <circle cx="12" cy="8" r="4"/>
+      <path d="M4 20 C4 16.686 7.582 14 12 14 C16.418 14 20 16.686 20 20"/>
+    </svg>
+    <span>Compte</span>
   </button>
 </nav>
 
@@ -1576,6 +1746,72 @@
             <span class="btn-v2 disabled" aria-disabled="true">Bientôt disponible</span>
           </div>
         </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ==============================
+       TAB 5 — COMPTE (auth)
+  ============================== -->
+  <div class="tab-panel" id="tab-compte">
+    <!-- aria-live region: announces state transitions to screen readers -->
+    <div id="auth-live" aria-live="polite" aria-atomic="true" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;"></div>
+
+    <div class="auth-panel">
+
+      <!-- STATE: signed-out (sign-in form) -->
+      <div id="auth-state-signout" class="auth-state">
+        <h1 class="auth-panel-title">Espace membre</h1>
+        <p class="auth-panel-desc">Connecte-toi pour accéder à ton espace membre.</p>
+        <div class="auth-field-group">
+          <label class="auth-form-label" for="auth-email">Adresse e-mail</label>
+          <input class="auth-input" type="email" id="auth-email" name="email" placeholder="ton@email.fr" autocomplete="email" spellcheck="false">
+        </div>
+        <button class="auth-btn-primary" id="auth-submit-btn" type="button">Recevoir le lien</button>
+        <p class="auth-error" id="auth-signin-error"></p>
+      </div>
+
+      <!-- STATE: awaiting email confirmation -->
+      <div id="auth-state-pending" class="auth-state" style="display:none;">
+        <svg class="auth-confirm-icon" width="40" height="40" viewBox="0 0 40 40" fill="none" aria-hidden="true">
+          <rect x="4" y="10" width="32" height="22" rx="3" stroke="#001EFF" stroke-width="2"/>
+          <path d="M4 13 L20 23 L36 13" stroke="#001EFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <h2 class="auth-panel-title" id="auth-confirm-heading" tabindex="-1">Vérifie ta boîte mail</h2>
+        <p class="auth-confirm-body" id="auth-confirm-body"></p>
+        <div class="auth-resend-row">
+          <button class="auth-link-btn" id="auth-resend-btn" type="button">Renvoyer le lien</button>
+          <button class="auth-link-btn" id="auth-change-email-btn" type="button">Utiliser une autre adresse</button>
+        </div>
+        <p class="auth-error" id="auth-resend-error"></p>
+      </div>
+
+      <!-- STATE: first-time profile form (new member) -->
+      <div id="auth-state-profile" class="auth-state" style="display:none;">
+        <h2 class="auth-panel-title" id="auth-profile-heading" tabindex="-1">Bienvenue chez DRC — complète ton profil</h2>
+        <p class="auth-panel-desc">Ces informations sont réservées aux membres du club.</p>
+        <div class="auth-field-group">
+          <label class="auth-form-label" for="auth-first-name">Prénom</label>
+          <input class="auth-input" type="text" id="auth-first-name" name="first_name" autocomplete="given-name">
+        </div>
+        <div class="auth-field-group">
+          <label class="auth-form-label" for="auth-last-name">Nom</label>
+          <input class="auth-input" type="text" id="auth-last-name" name="family_name" autocomplete="family-name">
+        </div>
+        <div class="auth-field-group">
+          <label class="auth-form-label" for="auth-birth-date">Date de naissance</label>
+          <input class="auth-input" type="date" id="auth-birth-date" name="birth_date" autocomplete="bday">
+        </div>
+        <button class="auth-btn-primary" id="auth-profile-save-btn" type="button">Enregistrer</button>
+        <p class="auth-error" id="auth-profile-error"></p>
+      </div>
+
+      <!-- STATE: signed-in (established member) -->
+      <div id="auth-state-signedin" class="auth-state" style="display:none;">
+        <p class="auth-member-name" id="auth-member-name"></p>
+        <p class="auth-member-email" id="auth-member-email"></p>
+        <button class="auth-btn-secondary" id="auth-signout-btn" type="button">Se déconnecter</button>
       </div>
 
     </div>
@@ -1951,6 +2187,289 @@ async function loadResources() {
 }
 
 document.addEventListener('supabase-ready', loadResources);
+
+// ===================================================================
+// === AUTH === (magic-link sign-in + first-time profile capture)
+// ===================================================================
+
+// Auth state helpers
+function getAuthEl(id) { return document.getElementById(id); }
+
+function showAuthState(stateId, announcementText) {
+  const states = ['auth-state-signout', 'auth-state-pending', 'auth-state-profile', 'auth-state-signedin'];
+  states.forEach(id => {
+    const el = getAuthEl(id);
+    if (el) {
+      if (id === stateId) {
+        el.style.opacity = '0';
+        el.style.display = '';
+        // Trigger reflow then fade in
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => { el.style.opacity = '1'; });
+        });
+      } else {
+        el.style.display = 'none';
+        el.style.opacity = '';
+      }
+    }
+  });
+  // Announce state change to screen readers
+  if (announcementText) {
+    const live = getAuthEl('auth-live');
+    if (live) { live.textContent = ''; setTimeout(() => { live.textContent = announcementText; }, 50); }
+  }
+}
+
+function showAuthError(errorElId, message) {
+  const el = getAuthEl(errorElId);
+  if (!el) return;
+  el.textContent = message;
+  el.classList.add('visible');
+}
+
+function clearAuthError(errorElId) {
+  const el = getAuthEl(errorElId);
+  if (!el) return;
+  el.textContent = '';
+  el.classList.remove('visible');
+}
+
+function isValidEmail(email) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
+}
+
+let _resendLockUntil = 0;
+
+async function sendMagicLink(email) {
+  // EM CONFIG NOTE: Before this flow works end-to-end the Supabase dashboard must be configured:
+  //   1. Authentication → URL Configuration → Site URL: https://<owner>.github.io/drc-internal/
+  //   2. Authentication → URL Configuration → Redirect URLs: same URL (or the repo root).
+  //   3. Authentication → Settings → toggle "Enable sign ups" OFF (invite-only).
+  //   4. Authentication → SMTP Settings: configure a custom SMTP (e.g. Resend) to avoid the
+  //      built-in mailer's ~4 emails/hour rate limit. Required before bulk-inviting members.
+  //   5. Invite members via Authentication → Users → "Invite user" (enters their email).
+  //   Without (1)+(2) the magic-link callback returns to the wrong origin.
+  //   Without (3) anyone can self-register by entering any email on the Compte tab.
+  const { error } = await window.supabase.auth.signInWithOtp({
+    email,
+    options: {
+      emailRedirectTo: window.location.origin + window.location.pathname
+    }
+  });
+  return error;
+}
+
+async function initAuth() {
+  // Attach sign-in submit
+  const submitBtn = getAuthEl('auth-submit-btn');
+  const emailInput = getAuthEl('auth-email');
+  if (submitBtn && emailInput) {
+    submitBtn.addEventListener('click', async () => {
+      clearAuthError('auth-signin-error');
+      const email = emailInput.value.trim();
+      if (!isValidEmail(email)) {
+        showAuthError('auth-signin-error', 'Adresse e-mail invalide.');
+        return;
+      }
+      submitBtn.disabled = true;
+      const error = await sendMagicLink(email);
+      submitBtn.disabled = false;
+      if (error) {
+        if (error.message && /signup|sign.up|not allowed|disabled/i.test(error.message)) {
+          showAuthError('auth-signin-error', 'Cette adresse n\'est pas autorisée. Contacte l\'administrateur du club.');
+        } else if (error.status === 429) {
+          showAuthError('auth-signin-error', 'Trop de tentatives. Réessaie dans quelques minutes.');
+        } else if (error.message && /network|fetch/i.test(error.message)) {
+          showAuthError('auth-signin-error', 'Connexion impossible. Vérifie ta connexion et réessaie.');
+        } else {
+          showAuthError('auth-signin-error', 'Connexion impossible. Vérifie ta connexion et réessaie.');
+        }
+        return;
+      }
+      _resendLockUntil = Date.now() + 30000;
+      showPendingState(email);
+    });
+
+    // Allow Enter key in email input to submit
+    emailInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') submitBtn.click();
+    });
+  }
+
+  // Attach resend button
+  const resendBtn = getAuthEl('auth-resend-btn');
+  if (resendBtn) {
+    resendBtn.addEventListener('click', async () => {
+      const now = Date.now();
+      if (now < _resendLockUntil) return; // still locked
+      clearAuthError('auth-resend-error');
+      const email = emailInput ? emailInput.value.trim() : '';
+      if (!email) return;
+      resendBtn.disabled = true;
+      _resendLockUntil = Date.now() + 30000;
+      const error = await sendMagicLink(email);
+      if (error) {
+        if (error.message && /signup|sign.up|not allowed|disabled/i.test(error.message)) {
+          showAuthError('auth-resend-error', 'Cette adresse n\'est pas autorisée. Contacte l\'administrateur du club.');
+        } else if (error.status === 429) {
+          showAuthError('auth-resend-error', 'Trop de tentatives. Réessaie dans quelques minutes.');
+        } else {
+          showAuthError('auth-resend-error', 'Connexion impossible. Vérifie ta connexion et réessaie.');
+        }
+      }
+      startResendLockdown();
+    });
+  }
+
+  // Attach change-email button
+  const changeEmailBtn = getAuthEl('auth-change-email-btn');
+  if (changeEmailBtn) {
+    changeEmailBtn.addEventListener('click', () => {
+      clearAuthError('auth-signin-error');
+      showAuthState('auth-state-signout', '');
+      const input = getAuthEl('auth-email');
+      if (input) { input.value = ''; input.focus(); }
+    });
+  }
+
+  // Attach profile save button
+  const profileSaveBtn = getAuthEl('auth-profile-save-btn');
+  if (profileSaveBtn) {
+    profileSaveBtn.addEventListener('click', async () => {
+      clearAuthError('auth-profile-error');
+      const firstName = (getAuthEl('auth-first-name') || {}).value || '';
+      const lastName  = (getAuthEl('auth-last-name')  || {}).value || '';
+      const birthDateRaw = (getAuthEl('auth-birth-date') || {}).value || '';
+      const birthDate = birthDateRaw.trim() === '' ? null : birthDateRaw.trim();
+
+      if (!firstName.trim() || !lastName.trim()) {
+        showAuthError('auth-profile-error', 'Impossible d\'enregistrer. Réessaie.');
+        return;
+      }
+
+      profileSaveBtn.disabled = true;
+      const { data: { user } } = await window.supabase.auth.getUser();
+      if (!user) { profileSaveBtn.disabled = false; return; }
+
+      const { error } = await window.supabase
+        .from('members')
+        .update({ first_name: firstName.trim(), last_name: lastName.trim(), birth_date: birthDate })
+        .eq('id', user.id);
+
+      profileSaveBtn.disabled = false;
+      if (error) {
+        showAuthError('auth-profile-error', 'Impossible d\'enregistrer. Réessaie.');
+        return;
+      }
+      showSignedInState(firstName.trim(), user.email);
+    });
+  }
+
+  // Attach sign-out button
+  const signoutBtn = getAuthEl('auth-signout-btn');
+  if (signoutBtn) {
+    signoutBtn.addEventListener('click', async () => {
+      signoutBtn.disabled = true;
+      await window.supabase.auth.signOut();
+      signoutBtn.disabled = false;
+      // onAuthStateChange SIGNED_OUT handler will update the UI
+    });
+  }
+
+  // Wire auth state changes
+  window.supabase.auth.onAuthStateChange(async (event, session) => {
+    if (event === 'SIGNED_IN' && session) {
+      await handleSignedIn(session.user);
+    } else if (event === 'SIGNED_OUT') {
+      showAuthState('auth-state-signout', 'Déconnecté.');
+    } else if (event === 'TOKEN_REFRESHED') {
+      // silent — no UI change needed
+    }
+  });
+
+  // Check for error from magic-link callback (e.g. expired or used link)
+  // Supabase auto-processes the hash; errors surface in the URL or via getSession()
+  const urlHash = window.location.hash;
+  if (urlHash.includes('error=') || urlHash.includes('error_description=')) {
+    const params = new URLSearchParams(urlHash.replace(/^#/, ''));
+    const errorDesc = params.get('error_description') || '';
+    let errMsg = 'Connexion impossible. Vérifie ta connexion et réessaie.';
+    if (/expir/i.test(errorDesc)) {
+      errMsg = 'Ce lien a expiré. Demande un nouveau lien.';
+    } else if (/used|utiliz/i.test(errorDesc)) {
+      errMsg = 'Ce lien a déjà été utilisé. Demande un nouveau lien.';
+    }
+    showAuthState('auth-state-signout', '');
+    showAuthError('auth-signin-error', errMsg);
+    // Clean up the hash so reloading doesn't re-show the error
+    history.replaceState(null, '', window.location.pathname);
+    return;
+  }
+
+  // On load: check if already signed in (e.g. valid session cookie)
+  const { data: { session: existingSession } } = await window.supabase.auth.getSession();
+  if (existingSession) {
+    await handleSignedIn(existingSession.user);
+  }
+}
+
+async function handleSignedIn(user) {
+  // Fetch the members row to check for placeholder values
+  const { data: member, error } = await window.supabase
+    .from('members')
+    .select('first_name, last_name')
+    .eq('id', user.id)
+    .single();
+
+  if (error || !member) {
+    // Fallback: show signed-in with email only
+    showSignedInState('', user.email);
+    return;
+  }
+
+  const needsProfile = member.first_name === '?' || member.last_name === '?';
+  if (needsProfile) {
+    showAuthState('auth-state-profile', 'Bienvenue. Complète ton profil pour continuer.');
+    const heading = getAuthEl('auth-profile-heading');
+    if (heading) heading.focus();
+  } else {
+    showSignedInState(member.first_name, user.email);
+  }
+}
+
+function showPendingState(email) {
+  clearAuthError('auth-signin-error');
+  const bodyEl = getAuthEl('auth-confirm-body');
+  if (bodyEl) {
+    bodyEl.textContent = `Un lien de connexion vient d'être envoyé à ${email}. Clique dessus pour te connecter — il est valable 10 minutes. Si tu ne reçois rien, contacte l'administrateur du club.`;
+  }
+  showAuthState('auth-state-pending', 'Lien envoyé. Vérifie ta boîte mail.');
+  const heading = getAuthEl('auth-confirm-heading');
+  if (heading) heading.focus();
+  startResendLockdown();
+}
+
+function startResendLockdown() {
+  const btn = getAuthEl('auth-resend-btn');
+  if (!btn) return;
+  btn.disabled = true;
+  const tick = setInterval(() => {
+    if (Date.now() >= _resendLockUntil) {
+      clearInterval(tick);
+      btn.disabled = false;
+    }
+  }, 500);
+}
+
+function showSignedInState(firstName, email) {
+  const nameEl  = getAuthEl('auth-member-name');
+  const emailEl = getAuthEl('auth-member-email');
+  if (nameEl)  nameEl.textContent  = firstName || '';
+  if (emailEl) emailEl.textContent = `Connecté en tant que ${email}`;
+  showAuthState('auth-state-signedin', firstName ? `Bonjour ${firstName}.` : 'Connecté.');
+}
+
+document.addEventListener('supabase-ready', () => { initAuth(); });
 
 // ===================================================================
 // VMA CALCULATOR
