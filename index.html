@@ -2548,6 +2548,7 @@ async function handleSignedIn(user) {
 
   const needsProfile = member.first_name === '?' || member.last_name === '?';
   if (needsProfile) {
+    activateTab('compte');
     showAuthState('auth-state-profile', 'Bienvenue. Complète ton profil pour continuer.');
     const heading = getAuthEl('auth-profile-heading');
     if (heading) heading.focus();
