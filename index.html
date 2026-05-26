@@ -1882,6 +1882,38 @@
   });
   window.supabase = supabase;
 
+  // Manual hash parsing fallback: the SDK's auto-detect-session-in-URL has
+  // proven unreliable in current @supabase/supabase-js@2 versions. If the
+  // page loaded with `#access_token=…` (implicit-flow magic link), parse
+  // the tokens ourselves and call setSession directly. Harmless if the SDK
+  // already processed it.
+  if (window.location.hash && window.location.hash.includes('access_token=')) {
+    console.log('[DRC] manual-hash: detected #access_token in URL, parsing...');
+    try {
+      const params = new URLSearchParams(window.location.hash.replace(/^#/, ''));
+      const access_token = params.get('access_token');
+      const refresh_token = params.get('refresh_token');
+      if (access_token && refresh_token) {
+        const { data, error } = await supabase.auth.setSession({
+          access_token,
+          refresh_token,
+        });
+        if (error) {
+          console.error('[DRC] manual-hash setSession error:', error);
+        } else {
+          console.log('[DRC] manual-hash setSession success; user:', data.session && data.session.user && data.session.user.email);
+          // Strip the hash so reloading the page doesn't re-trigger this flow
+          history.replaceState(null, '', window.location.pathname + window.location.search);
+        }
+      } else {
+        console.warn('[DRC] manual-hash: tokens missing from hash');
+      }
+    } catch (e) {
+      console.error('[DRC] manual-hash parsing threw:', e);
+      // Continue to the normal getSession flow regardless
+    }
+  }
+
   // Always signal that the Supabase client is initialized so initAuth() can
   // attach onAuthStateChange and sign-in form handlers, regardless of session
   // state. Anonymous visitors need this to make the sign-in form functional.
