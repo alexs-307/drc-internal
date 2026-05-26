@@ -2413,10 +2413,16 @@ async function initAuth() {
     });
   }
 
-  // Attach profile save button
-  const profileSaveBtn = getAuthEl('auth-profile-save-btn');
-  if (profileSaveBtn) {
-    profileSaveBtn.addEventListener('click', async () => {
+  // Attach profile save button — event delegation so the listener survives any DOM
+  // mutation. Same defensive pattern as the signout button (see PR #21).
+  if (!window._profileSaveDelegateAttached) {
+    window._profileSaveDelegateAttached = true;
+    document.addEventListener('click', async (e) => {
+      const btn = e.target && e.target.closest && e.target.closest('#auth-profile-save-btn');
+      if (!btn) return;
+      if (btn.disabled) return;
+      console.log('[DRC] profile-save clicked');
+
       clearAuthError('auth-profile-error');
       const firstName = (getAuthEl('auth-first-name') || {}).value || '';
       const lastName  = (getAuthEl('auth-last-name')  || {}).value || '';
@@ -2424,25 +2430,48 @@ async function initAuth() {
       const birthDate = birthDateRaw.trim() === '' ? null : birthDateRaw.trim();
 
       if (!firstName.trim() || !lastName.trim()) {
-        showAuthError('auth-profile-error', 'Impossible d\'enregistrer. Réessaie.');
+        showAuthError('auth-profile-error', 'Le prénom et le nom sont requis.');
         return;
       }
 
-      profileSaveBtn.disabled = true;
-      const { data: { user } } = await window.supabase.auth.getUser();
-      if (!user) { profileSaveBtn.disabled = false; return; }
+      btn.disabled = true;
+      try {
+        const { data: { user } } = await window.supabase.auth.getUser();
+        if (!user) {
+          console.error('[DRC] profile-save: no authenticated user');
+          showAuthError('auth-profile-error', 'Session expirée. Reconnecte-toi.');
+          return;
+        }
+        console.log('[DRC] profile-save: updating row for user', user.id);
 
-      const { error } = await window.supabase
-        .from('members')
-        .update({ first_name: firstName.trim(), last_name: lastName.trim(), birth_date: birthDate })
-        .eq('id', user.id);
+        const { error, data } = await window.supabase
+          .from('members')
+          .update({
+            first_name: firstName.trim(),
+            last_name: lastName.trim(),
+            birth_date: birthDate
+          })
+          .eq('id', user.id)
+          .select();
 
-      profileSaveBtn.disabled = false;
-      if (error) {
-        showAuthError('auth-profile-error', 'Impossible d\'enregistrer. Réessaie.');
-        return;
+        if (error) {
+          console.error('[DRC] profile UPDATE error:', error);
+          showAuthError('auth-profile-error', `Erreur: ${error.message || 'Impossible d\'enregistrer.'}`);
+          return;
+        }
+        if (!data || data.length === 0) {
+          console.error('[DRC] profile UPDATE returned no rows. Check RLS policy.');
+          showAuthError('auth-profile-error', 'Aucune ligne mise à jour. Contacte l\'administrateur.');
+          return;
+        }
+        console.log('[DRC] profile UPDATE success, rows:', data.length);
+        showSignedInState(firstName.trim(), user.email);
+      } catch (err) {
+        console.error('[DRC] profile-save threw:', err);
+        showAuthError('auth-profile-error', `Erreur inattendue: ${err.message || err}`);
+      } finally {
+        btn.disabled = false;
       }
-      showSignedInState(firstName.trim(), user.email);
     });
   }
 
