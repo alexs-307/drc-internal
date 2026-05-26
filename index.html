@@ -2562,11 +2562,14 @@ function startResendLockdown() {
 }
 
 function showSignedInState(firstName, email) {
-  const nameEl  = getAuthEl('auth-member-name');
+  const nameEl = getAuthEl('auth-member-name');
   const emailEl = getAuthEl('auth-member-email');
-  if (nameEl)  nameEl.textContent  = firstName || '';
-  if (emailEl) emailEl.textContent = `Connecté en tant que ${email}`;
-  showAuthState('auth-state-signedin', firstName ? `Bonjour ${firstName}.` : 'Connecté.');
+  const greeting = firstName
+    ? `Bienvenue sur l'espace de DRC, ${firstName} !`
+    : `Bienvenue sur l'espace de DRC !`;
+  if (nameEl) nameEl.textContent = greeting;
+  if (emailEl) emailEl.textContent = `Connecté avec ton email ${email || ''}. Paré à drifter ?`;
+  showAuthState('auth-state-signedin', greeting);
 }
 
 document.addEventListener('supabase-client-ready', () => { initAuth(); });
