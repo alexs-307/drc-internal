@@ -1818,26 +1818,6 @@
         <p class="auth-error" id="auth-resend-error"></p>
       </div>
 
-      <!-- STATE: first-time profile form (new member) -->
-      <div id="auth-state-profile" class="auth-state" style="display:none;">
-        <h2 class="auth-panel-title" id="auth-profile-heading" tabindex="-1">Bienvenue chez DRC — complète ton profil</h2>
-        <p class="auth-panel-desc">Ces informations sont réservées aux membres du club.</p>
-        <div class="auth-field-group">
-          <label class="auth-form-label" for="auth-first-name">Prénom</label>
-          <input class="auth-input" type="text" id="auth-first-name" name="first_name" autocomplete="given-name">
-        </div>
-        <div class="auth-field-group">
-          <label class="auth-form-label" for="auth-last-name">Nom</label>
-          <input class="auth-input" type="text" id="auth-last-name" name="family_name" autocomplete="family-name">
-        </div>
-        <div class="auth-field-group">
-          <label class="auth-form-label" for="auth-birth-date">Date de naissance</label>
-          <input class="auth-input" type="date" id="auth-birth-date" name="birth_date" autocomplete="bday">
-        </div>
-        <button class="auth-btn-primary" id="auth-profile-save-btn" type="button">Enregistrer</button>
-        <p class="auth-error" id="auth-profile-error"></p>
-      </div>
-
       <!-- STATE: signed-in (established member) -->
       <div id="auth-state-signedin" class="auth-state" style="display:none;">
         <p class="auth-member-name" id="auth-member-name"></p>
@@ -2312,14 +2292,14 @@ async function loadResources() {
 document.addEventListener('supabase-ready', loadResources);
 
 // ===================================================================
-// === AUTH === (magic-link sign-in + first-time profile capture)
+// === AUTH === (magic-link sign-in)
 // ===================================================================
 
 // Auth state helpers
 function getAuthEl(id) { return document.getElementById(id); }
 
 function showAuthState(stateId, announcementText) {
-  const states = ['auth-state-signout', 'auth-state-pending', 'auth-state-profile', 'auth-state-signedin'];
+  const states = ['auth-state-signout', 'auth-state-pending', 'auth-state-signedin'];
   states.forEach(id => {
     const el = getAuthEl(id);
     if (el) {
@@ -2455,68 +2435,6 @@ async function initAuth() {
     });
   }
 
-  // Attach profile save button — event delegation so the listener survives any DOM
-  // mutation. Same defensive pattern as the signout button (see PR #21).
-  if (!window._profileSaveDelegateAttached) {
-    window._profileSaveDelegateAttached = true;
-    document.addEventListener('click', async (e) => {
-      const btn = e.target && e.target.closest && e.target.closest('#auth-profile-save-btn');
-      if (!btn) return;
-      if (btn.disabled) return;
-      console.log('[DRC] profile-save clicked');
-
-      clearAuthError('auth-profile-error');
-      const firstName = (getAuthEl('auth-first-name') || {}).value || '';
-      const lastName  = (getAuthEl('auth-last-name')  || {}).value || '';
-      const birthDateRaw = (getAuthEl('auth-birth-date') || {}).value || '';
-      const birthDate = birthDateRaw.trim() === '' ? null : birthDateRaw.trim();
-
-      if (!firstName.trim() || !lastName.trim()) {
-        showAuthError('auth-profile-error', 'Le prénom et le nom sont requis.');
-        return;
-      }
-
-      btn.disabled = true;
-      try {
-        const { data: { user } } = await window.supabase.auth.getUser();
-        if (!user) {
-          console.error('[DRC] profile-save: no authenticated user');
-          showAuthError('auth-profile-error', 'Session expirée. Reconnecte-toi.');
-          return;
-        }
-        console.log('[DRC] profile-save: updating row for user', user.id);
-
-        const { error, data } = await window.supabase
-          .from('members')
-          .update({
-            first_name: firstName.trim(),
-            last_name: lastName.trim(),
-            birth_date: birthDate
-          })
-          .eq('id', user.id)
-          .select();
-
-        if (error) {
-          console.error('[DRC] profile UPDATE error:', error);
-          showAuthError('auth-profile-error', `Erreur: ${error.message || 'Impossible d\'enregistrer.'}`);
-          return;
-        }
-        if (!data || data.length === 0) {
-          console.error('[DRC] profile UPDATE returned no rows. Check RLS policy.');
-          showAuthError('auth-profile-error', 'Aucune ligne mise à jour. Contacte l\'administrateur.');
-          return;
-        }
-        console.log('[DRC] profile UPDATE success, rows:', data.length);
-        showSignedInState(firstName.trim(), user.email);
-      } catch (err) {
-        console.error('[DRC] profile-save threw:', err);
-        showAuthError('auth-profile-error', `Erreur inattendue: ${err.message || err}`);
-      } finally {
-        btn.disabled = false;
-      }
-    });
-  }
-
   // Attach sign-out button — event delegation so the listener survives any DOM
   // mutation of the button (e.g. innerHTML replacement elsewhere in initAuth).
   // The flag prevents double-attachment if initAuth() is ever re-entered.
@@ -2604,28 +2522,19 @@ async function initAuth() {
 }
 
 async function handleSignedIn(user) {
-  // Fetch the members row to check for placeholder values
-  const { data: member, error } = await window.supabase
+  // Fetch the member's first_name to greet them by name if available.
+  // If the row doesn't exist or first_name is the placeholder '?', show
+  // a generic "Connecté." greeting instead of an awkward "Bonjour ?."
+  const { data: member } = await window.supabase
     .from('members')
-    .select('first_name, last_name')
+    .select('first_name')
     .eq('id', user.id)
     .single();
 
-  if (error || !member) {
-    // Fallback: show signed-in with email only
-    showSignedInState('', user.email);
-    return;
-  }
-
-  const needsProfile = member.first_name === '?' || member.last_name === '?';
-  if (needsProfile) {
-    activateTab('compte');
-    showAuthState('auth-state-profile', 'Bienvenue. Complète ton profil pour continuer.');
-    const heading = getAuthEl('auth-profile-heading');
-    if (heading) heading.focus();
-  } else {
-    showSignedInState(member.first_name, user.email);
-  }
+  const firstName = (member && member.first_name && member.first_name !== '?')
+    ? member.first_name
+    : '';
+  showSignedInState(firstName, user.email);
 }
 
 function showPendingState(email) {
