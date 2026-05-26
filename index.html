@@ -1869,7 +1869,17 @@
   const SUPABASE_URL = 'https://zglyzryhckxbwsivlotu.supabase.co';
   const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_GledNe7S-JthFTqOwYSnzw_3ASlFZae';
 
-  const supabase = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
+  // Explicit flowType: 'implicit' is required so the SDK processes the
+  // #access_token=... hash that Supabase Auth puts in magic-link emails.
+  // Recent Supabase JS v2 minor versions changed the default to 'pkce',
+  // which expects ?code= in the query string and silently ignores the hash.
+  // detectSessionInUrl: true is the default but stated explicitly for safety.
+  const supabase = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
+    auth: {
+      flowType: 'implicit',
+      detectSessionInUrl: true,
+    },
+  });
   window.supabase = supabase;
 
   // Always signal that the Supabase client is initialized so initAuth() can
