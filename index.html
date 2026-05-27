@@ -1912,48 +1912,68 @@
     document.dispatchEvent(new CustomEvent('supabase-ready'));
   }
 
-  // onAuthStateChange handles every auth transition: initial session restore,
-  // magic-link callback, sign-out, and silent token refresh.
-  // Wired BEFORE the getSession call below so the initial SIGNED_IN /
-  // INITIAL_SESSION event is never missed.
-  supabase.auth.onAuthStateChange(async (event, session) => {
-    if (event === 'SIGNED_IN' && session) {
+  // Initial-auth latch: flips true on the first session-bearing event
+  // (INITIAL_SESSION or SIGNED_IN), OR on the 3s safety-net fallback.
+  // Prevents the initial path from running twice, and — critically — prevents
+  // the safety-net fallback from demoting an already-restored session.
+  let _initialAuthHandled = false;
+
+  function handleInitialAuth(session) {
+    if (_initialAuthHandled) return;
+    _initialAuthHandled = true;
+    if (session) {
       setAuthUIState(true);
       dispatchSupabaseReady();
-      await handleSignedIn(session.user); // first_name fetch + signed-in card
+      handleSignedIn(session.user); // fire-and-forget; first_name fetch + signed-in card
+    } else {
+      setAuthUIState(false);
+    }
+  }
+
+  // onAuthStateChange is the single source of truth for auth state.
+  // No startup session-check call — the INITIAL_SESSION event carries
+  // the storage-restored session and avoids the SDK init hang
+  // (github.com/supabase/supabase/issues/35754).
+  supabase.auth.onAuthStateChange((event, session) => {
+    if (event === 'INITIAL_SESSION') {
+      // Fires once shortly after createClient with the storage-restored session
+      // (or null). In supabase-js v2.49 this is the primary signal for restoring
+      // a session from localStorage.
+      handleInitialAuth(session);
+    } else if (event === 'SIGNED_IN' && session) {
+      if (!_initialAuthHandled) {
+        // SDK fired SIGNED_IN as the first session-bearing event (older v2
+        // behaviour, or a SDK version that skips INITIAL_SESSION). Treat it
+        // as the initial-auth signal.
+        handleInitialAuth(session);
+      } else {
+        // Post-initial sign-in: page already rendered anonymous after an
+        // INITIAL_SESSION(null), then the SDK consumed the magic-link hash and
+        // fires SIGNED_IN with the new session. Transition forward; do not
+        // re-run the initial gate.
+        setAuthUIState(true);
+        dispatchSupabaseReady();
+        handleSignedIn(session.user);
+      }
     } else if (event === 'SIGNED_OUT') {
       setAuthUIState(false);
       if (typeof activateTab === 'function') activateTab('saison');
       if (typeof showAuthState === 'function') showAuthState('auth-state-signout', 'Déconnecté.');
     }
-    // TOKEN_REFRESHED, INITIAL_SESSION: no UI change needed beyond what
-    // SIGNED_IN already handled.
+    // TOKEN_REFRESHED, USER_UPDATED, PASSWORD_RECOVERY: no UI change required.
   });
 
-  // One session check at startup, raced against a 10s timeout to defend
-  // against the known supabase-js hang (github.com/supabase/supabase/issues/35754).
-  // If we time out, we render anonymous; onAuthStateChange will still upgrade
-  // the view to authenticated if the SDK eventually catches up.
-  // IMPORTANT: do NOT call handleSignedIn here — onAuthStateChange fires
-  // INITIAL_SESSION / SIGNED_IN immediately after the call resolves, and
-  // that handler calls handleSignedIn. Calling it here too would double-fire
-  // the members table lookup.
-  try {
-    const { data: { session } } = await Promise.race([
-      supabase.auth.getSession(),
-      new Promise((_, r) => setTimeout(() => r(new Error('getSession timeout (10s)')), 10000)),
-    ]);
-    if (session) {
-      setAuthUIState(true);
-      dispatchSupabaseReady();
-      // handleSignedIn is NOT called here — onAuthStateChange handles it.
-    } else {
-      setAuthUIState(false);
+  // Safety-net: INITIAL_SESSION normally fires within ~100ms. If 3s elapses
+  // without any session-bearing event, default to anonymous. The latch check
+  // inside handleInitialAuth means this can never downgrade a session the
+  // listener already restored — it only catches the "SDK never fired anything"
+  // failure mode.
+  setTimeout(() => {
+    if (!_initialAuthHandled) {
+      console.warn('[DRC] no initial auth event within 3s — defaulting to anonymous');
+      handleInitialAuth(null);
     }
-  } catch (e) {
-    console.error('[DRC] getSession timed out; defaulting to anonymous view.', e);
-    setAuthUIState(false);
-  }
+  }, 3000);
 
   // Regression canary: if the SDK ever fails to consume the #access_token hash
   // (e.g. a future minor flips detectSessionInUrl default), we hear about it in
@@ -1965,7 +1985,7 @@
   }, 1000);
 
   // initAuth() wires the sign-in form, resend, change-email, and sign-out
-  // button handlers. It must not perform its own session check — the block
+  // button handlers. It must not perform its own session check — onAuthStateChange
   // above is the single source of truth for the initial session state.
   initAuth();
 </script>
