@@ -1491,7 +1491,7 @@
   }
   .auth-link-btn:not(:disabled):hover { opacity: 0.7; }
 
-  /* Signed-in panel — peach card greeting */
+  /* Signed-in panel — page-title pattern greeting */
   @keyframes signedin-rise {
     from { opacity: 0; transform: translateY(8px); }
     to   { opacity: 1; transform: translateY(0); }
@@ -1500,46 +1500,24 @@
     from { opacity: 0; }
     to   { opacity: 1; }
   }
-  /* Suppress parent bulk-fade so child keyframes control the entrance */
-  #auth-state-signedin { transition: none; }
 
-  .signedin-card {
-    background: var(--peach);
-    border-radius: var(--radius);
-    padding: 28px 28px 28px;
-    max-width: 400px;
-    margin: 0 auto;
-  }
-  .signedin-name {
-    font-family: var(--font-sub);
-    font-size: clamp(40px, 8vw, 72px);
-    line-height: 0.92;
-    text-transform: uppercase;
-    letter-spacing: -0.02em;
-    color: var(--blue);
-    margin: 0;
+  /* Re-target animations to the new page-title structure */
+  #auth-state-signedin .line-1,
+  #auth-state-signedin .line-2 {
     animation: signedin-rise 350ms ease-out both;
   }
-  .signedin-tagline {
-    font-family: 'Inter', system-ui, sans-serif;
-    font-style: italic;
-    font-size: 1rem;
-    color: var(--graphite);
-    margin: 4px 0 0;
-    animation: signedin-rise 350ms ease-out both;
+  #auth-state-signedin .auth-member-email-line {
+    animation: signedin-fade 350ms ease-out 80ms both;
   }
-  .signedin-email {
-    font-family: var(--font-mono);
-    font-size: 0.875rem;
-    letter-spacing: 0.08em;
-    color: var(--text-muted);
-    margin: 24px 0 0;
+  #auth-state-signedin #auth-signout-btn {
+    animation: signedin-fade 350ms ease-out 80ms both;
+  }
+
+  /* Email line: override page-sub uppercase so addresses stay readable */
+  .auth-member-email-line {
+    text-transform: none;
     overflow-wrap: anywhere;
-    animation: signedin-fade 350ms ease-out 80ms both;
-  }
-  #auth-signout-btn {
-    margin-top: 24px;
-    animation: signedin-fade 350ms ease-out 80ms both;
+    margin-bottom: 24px;
   }
 
   /* State transitions */
@@ -1856,11 +1834,11 @@
 
       <!-- STATE: signed-in (established member) -->
       <div id="auth-state-signedin" class="auth-state" style="display:none;">
-        <div class="signedin-card">
-          <p class="signedin-name" id="auth-member-name"></p>
-          <p class="signedin-tagline" id="auth-member-tagline">Paré à drifter ?</p>
-          <p class="signedin-email" id="auth-member-email"></p>
-        </div>
+        <h1 class="page-title">
+          <span class="line-1" id="auth-member-name"></span>
+          <span class="line-2">Paré à drifter ?</span>
+        </h1>
+        <p class="page-sub auth-member-email-line" id="auth-member-email"></p>
         <button class="auth-btn-secondary" id="auth-signout-btn" type="button">Se déconnecter</button>
       </div>
 
