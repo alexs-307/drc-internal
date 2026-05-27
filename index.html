@@ -1861,107 +1861,133 @@
 </footer>
 
 <script type="module">
-  import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
+  import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49/+esm';
 
   const SUPABASE_URL = 'https://zglyzryhckxbwsivlotu.supabase.co';
   const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_GledNe7S-JthFTqOwYSnzw_3ASlFZae';
 
-  // Explicit flowType: 'implicit' is required so the SDK processes the
-  // #access_token=... hash that Supabase Auth puts in magic-link emails.
-  // Recent Supabase JS v2 minor versions changed the default to 'pkce',
-  // which expects ?code= in the query string and silently ignores the hash.
-  // detectSessionInUrl: true is the default but stated explicitly for safety.
+  // flowType: 'implicit' is required so the SDK processes the #access_token=...
+  // hash that Supabase Auth puts in magic-link emails. Recent Supabase JS v2
+  // minor versions changed the default to 'pkce', which expects ?code= in the
+  // query string and silently ignores the hash.
+  // detectSessionInUrl: true tells the SDK to auto-consume the hash on load —
+  // this is the canonical single path; no manual setSession() fallback needed.
   const supabase = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
     auth: {
       flowType: 'implicit',
       detectSessionInUrl: true,
+      // persistSession + autoRefreshToken default to true; do not override.
     },
   });
   window.supabase = supabase;
 
-  // Manual hash parsing fallback: the SDK's auto-detect-session-in-URL has
-  // proven unreliable in current @supabase/supabase-js@2 versions. If the
-  // page loaded with `#access_token=…` (implicit-flow magic link), parse
-  // the tokens ourselves and call setSession directly. Harmless if the SDK
-  // already processed it.
-  if (window.location.hash && window.location.hash.includes('access_token=')) {
-    console.log('[DRC] manual-hash: detected #access_token in URL, parsing...');
-    try {
-      const params = new URLSearchParams(window.location.hash.replace(/^#/, ''));
-      const access_token = params.get('access_token');
-      const refresh_token = params.get('refresh_token');
-      if (access_token && refresh_token) {
-        const { data, error } = await supabase.auth.setSession({
-          access_token,
-          refresh_token,
-        });
-        if (error) {
-          console.error('[DRC] manual-hash setSession error:', error);
-        } else {
-          console.log('[DRC] manual-hash setSession success; user:', data.session && data.session.user && data.session.user.email);
-          // Strip the hash so reloading the page doesn't re-trigger this flow
-          history.replaceState(null, '', window.location.pathname + window.location.search);
-        }
-      } else {
-        console.warn('[DRC] manual-hash: tokens missing from hash');
-      }
-    } catch (e) {
-      console.error('[DRC] manual-hash parsing threw:', e);
-      // Continue to the normal getSession flow regardless
+  // Centralised UI state transition. Called from both the initial-session
+  // resolver and onAuthStateChange so all body-class mutations live in one place.
+  function setAuthUIState(authenticated) {
+    document.body.classList.remove('is-loading', 'is-authenticated', 'is-anonymous');
+    document.body.classList.add(authenticated ? 'is-authenticated' : 'is-anonymous');
+    if (!authenticated) {
+      // Anonymous default tab: Saison 01, not Calendrier.
+      // activateTab() lives in the classic (non-module) script and may not yet
+      // be defined when setAuthUIState is first called from the module, so
+      // manipulate the DOM directly here.
+      const calBtn    = document.querySelector('.tab-btn[data-tab="calendar"]');
+      const saisonBtn = document.querySelector('.tab-btn[data-tab="saison"]');
+      const calPanel    = document.getElementById('tab-calendar');
+      const saisonPanel = document.getElementById('tab-saison');
+      if (calBtn)    calBtn.classList.remove('active');
+      if (saisonBtn) saisonBtn.classList.add('active');
+      if (calPanel)    calPanel.classList.remove('active');
+      if (saisonPanel) saisonPanel.classList.add('active');
     }
   }
 
-  // Always signal that the Supabase client is initialized so initAuth() can
-  // attach onAuthStateChange and sign-in form handlers, regardless of session
-  // state. Anonymous visitors need this to make the sign-in form functional.
-  document.dispatchEvent(new CustomEvent('supabase-client-ready'));
-
-  // Resolve auth state before revealing the page.
-  // Only dispatch 'supabase-ready' when authenticated so the three data
-  // fetchers (renderRaces, loadSessions, loadResources) never run for
-  // anonymous visitors — avoids empty-data flashes and unnecessary network calls.
-  // Defensive: if getSession hangs or throws (e.g. stale session token,
-  // SDK refresh call stuck), fall back to anonymous so the page never
-  // gets stuck on the is-loading blank state. Worst case: user sees the
-  // sign-in card and can re-authenticate.
-  let session = null;
-  try {
-    const sessionPromise = supabase.auth.getSession();
-    const timeoutPromise = new Promise((_, reject) =>
-      setTimeout(() => reject(new Error('getSession timeout (3s)')), 3000)
-    );
-    const result = await Promise.race([sessionPromise, timeoutPromise]);
-    session = result.data.session;
-  } catch (e) {
-    console.error('Supabase getSession failed or timed out; defaulting to anonymous view.', e);
-    // session stays null → user gets the anonymous view
-  }
-  document.body.classList.remove('is-loading');
-  if (session) {
-    document.body.classList.add('is-authenticated');
-    // Mark data fetchers as already triggered so onAuthStateChange SIGNED_IN
-    // does not re-fire them when it runs immediately after this (session already live).
-    window._dataFetchersTriggered = true;
-    // Signal to the non-module script that the client is ready and user is authenticated.
+  // Single-dispatch latch for the data-fetcher event (renderRaces / loadSessions
+  // / loadResources). Guards against the INITIAL_SESSION + SIGNED_IN pair that
+  // the SDK can fire in quick succession on the first load.
+  let _readyDispatched = false;
+  function dispatchSupabaseReady() {
+    if (_readyDispatched) return;
+    _readyDispatched = true;
     document.dispatchEvent(new CustomEvent('supabase-ready'));
-  } else {
-    document.body.classList.add('is-anonymous');
-    window._dataFetchersTriggered = false;
-    // Do NOT dispatch 'supabase-ready' — data fetchers must not run for anonymous visitors.
-    // 'supabase-client-ready' was already dispatched above, so initAuth() will run
-    // and the sign-in form will be functional.
-    // Switch default active tab to Saison 01 (calendar is active by default in HTML).
-    // activateTab() is defined in the classic script and not yet available here, so
-    // manipulate the DOM directly.
-    const calBtn = document.querySelector('.tab-btn[data-tab="calendar"]');
-    const saisonBtn = document.querySelector('.tab-btn[data-tab="saison"]');
-    const calPanel = document.getElementById('tab-calendar');
-    const saisonPanel = document.getElementById('tab-saison');
-    if (calBtn) calBtn.classList.remove('active');
-    if (saisonBtn) saisonBtn.classList.add('active');
-    if (calPanel) calPanel.classList.remove('active');
-    if (saisonPanel) saisonPanel.classList.add('active');
   }
+
+  // Initial-auth latch: flips true on the first session-bearing event
+  // (INITIAL_SESSION or SIGNED_IN), OR on the 3s safety-net fallback.
+  // Prevents the initial path from running twice, and — critically — prevents
+  // the safety-net fallback from demoting an already-restored session.
+  let _initialAuthHandled = false;
+
+  function handleInitialAuth(session) {
+    if (_initialAuthHandled) return;
+    _initialAuthHandled = true;
+    if (session) {
+      setAuthUIState(true);
+      dispatchSupabaseReady();
+      handleSignedIn(session.user); // fire-and-forget; first_name fetch + signed-in card
+    } else {
+      setAuthUIState(false);
+    }
+  }
+
+  // onAuthStateChange is the single source of truth for auth state.
+  // No startup session-check call — the INITIAL_SESSION event carries
+  // the storage-restored session and avoids the SDK init hang
+  // (github.com/supabase/supabase/issues/35754).
+  supabase.auth.onAuthStateChange((event, session) => {
+    if (event === 'INITIAL_SESSION') {
+      // Fires once shortly after createClient with the storage-restored session
+      // (or null). In supabase-js v2.49 this is the primary signal for restoring
+      // a session from localStorage.
+      handleInitialAuth(session);
+    } else if (event === 'SIGNED_IN' && session) {
+      if (!_initialAuthHandled) {
+        // SDK fired SIGNED_IN as the first session-bearing event (older v2
+        // behaviour, or a SDK version that skips INITIAL_SESSION). Treat it
+        // as the initial-auth signal.
+        handleInitialAuth(session);
+      } else {
+        // Post-initial sign-in: page already rendered anonymous after an
+        // INITIAL_SESSION(null), then the SDK consumed the magic-link hash and
+        // fires SIGNED_IN with the new session. Transition forward; do not
+        // re-run the initial gate.
+        setAuthUIState(true);
+        dispatchSupabaseReady();
+        handleSignedIn(session.user);
+      }
+    } else if (event === 'SIGNED_OUT') {
+      setAuthUIState(false);
+      if (typeof activateTab === 'function') activateTab('saison');
+      if (typeof showAuthState === 'function') showAuthState('auth-state-signout', 'Déconnecté.');
+    }
+    // TOKEN_REFRESHED, USER_UPDATED, PASSWORD_RECOVERY: no UI change required.
+  });
+
+  // Safety-net: INITIAL_SESSION normally fires within ~100ms. If 3s elapses
+  // without any session-bearing event, default to anonymous. The latch check
+  // inside handleInitialAuth means this can never downgrade a session the
+  // listener already restored — it only catches the "SDK never fired anything"
+  // failure mode.
+  setTimeout(() => {
+    if (!_initialAuthHandled) {
+      console.warn('[DRC] no initial auth event within 3s — defaulting to anonymous');
+      handleInitialAuth(null);
+    }
+  }, 3000);
+
+  // Regression canary: if the SDK ever fails to consume the #access_token hash
+  // (e.g. a future minor flips detectSessionInUrl default), we hear about it in
+  // the console before users start reporting blank pages.
+  setTimeout(() => {
+    if (window.location.hash && window.location.hash.includes('access_token=')) {
+      console.warn('[DRC] auth: SDK did not consume #access_token hash within 1s — possible SDK regression');
+    }
+  }, 1000);
+
+  // initAuth() wires the sign-in form, resend, change-email, and sign-out
+  // button handlers. It must not perform its own session check — onAuthStateChange
+  // above is the single source of truth for the initial session state.
+  initAuth();
 </script>
 
 <script>
@@ -2467,17 +2493,8 @@ async function initAuth() {
         if (error) {
           console.error('[DRC] supabase.auth.signOut returned error:', error);
         }
-        // Defensive manual fallback: if onAuthStateChange SIGNED_OUT hasn't fired
-        // within 400ms, force the UI to the signed-out state ourselves.
-        setTimeout(() => {
-          if (document.body.classList.contains('is-authenticated')) {
-            console.warn('[DRC] SIGNED_OUT did not fire; forcing UI to signed-out state.');
-            document.body.classList.remove('is-authenticated', 'is-loading');
-            document.body.classList.add('is-anonymous');
-            if (typeof activateTab === 'function') activateTab('saison');
-            if (typeof showAuthState === 'function') showAuthState('auth-state-signout', 'Déconnecté.');
-          }
-        }, 400);
+        // onAuthStateChange fires SIGNED_OUT reliably after signOut() resolves;
+        // no defensive timer needed — the listener in the module script handles the UI.
       } catch (err) {
         console.error('[DRC] supabase.auth.signOut threw:', err);
       } finally {
@@ -2486,34 +2503,12 @@ async function initAuth() {
     });
   }
 
-  // Wire auth state changes
-  window.supabase.auth.onAuthStateChange(async (event, session) => {
-    if (event === 'SIGNED_IN' && session) {
-      // Body-class management (PR 5 gate)
-      document.body.classList.remove('is-anonymous', 'is-loading');
-      document.body.classList.add('is-authenticated');
-      // Trigger data fetchers only once per page session.
-      // window._dataFetchersTriggered is set to true by the module script when a
-      // session already exists at page load (preventing a double-dispatch on the
-      // initial SIGNED_IN event that fires right after getSession()).
-      if (!window._dataFetchersTriggered) {
-        window._dataFetchersTriggered = true;
-        document.dispatchEvent(new CustomEvent('supabase-ready'));
-      }
-      await handleSignedIn(session.user);
-    } else if (event === 'SIGNED_OUT') {
-      // Body-class management (PR 5 gate)
-      document.body.classList.remove('is-authenticated', 'is-loading');
-      document.body.classList.add('is-anonymous');
-      activateTab('saison'); // switch to Saison 01 — anonymous users can't see Calendrier
-      showAuthState('auth-state-signout', 'Déconnecté.');
-    } else if (event === 'TOKEN_REFRESHED') {
-      // silent — no UI change needed
-    }
-  });
+  // onAuthStateChange is wired in the module script (above the classic script),
+  // guaranteed to run before the initial session check so no auth event is
+  // missed. It is the single place that calls handleSignedIn and setAuthUIState.
 
-  // Check for error from magic-link callback (e.g. expired or used link)
-  // Supabase auto-processes the hash; errors surface in the URL or via getSession()
+  // Check for error from magic-link callback (e.g. expired or used link).
+  // Implicit-flow errors arrive in the hash; this parser is correct and stays here.
   const urlHash = window.location.hash;
   if (urlHash.includes('error=') || urlHash.includes('error_description=')) {
     const params = new URLSearchParams(urlHash.replace(/^#/, ''));
@@ -2529,12 +2524,6 @@ async function initAuth() {
     // Clean up the hash so reloading doesn't re-show the error
     history.replaceState(null, '', window.location.pathname);
     return;
-  }
-
-  // On load: check if already signed in (e.g. valid session cookie)
-  const { data: { session: existingSession } } = await window.supabase.auth.getSession();
-  if (existingSession) {
-    await handleSignedIn(existingSession.user);
   }
 }
 
@@ -2590,7 +2579,10 @@ function showSignedInState(firstName, email) {
   showAuthState('auth-state-signedin', `${displayName}. Paré à drifter ?`);
 }
 
-document.addEventListener('supabase-client-ready', () => { initAuth(); });
+// initAuth() is now called directly from the module script at the bottom of the
+// page, after onAuthStateChange is wired and the initial session resolved. The
+// old client-ready event and manual hash-parser that raced with the SDK's
+// detectSessionInUrl have been removed.
 
 // ===================================================================
 // VMA CALCULATOR
