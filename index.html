@@ -1491,19 +1491,33 @@
   }
   .auth-link-btn:not(:disabled):hover { opacity: 0.7; }
 
-  /* Signed-in panel */
-  .auth-member-name {
-    font-family: var(--font-sub);
-    text-transform: uppercase;
-    font-size: 28px;
-    line-height: 1;
-    margin-bottom: 6px;
-    letter-spacing: 0.01em;
+  /* Signed-in panel — page-title pattern greeting */
+  @keyframes signedin-rise {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: translateY(0); }
   }
-  .auth-member-email {
-    color: var(--text-muted);
-    font-size: 0.88rem;
-    margin-bottom: 28px;
+  @keyframes signedin-fade {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+  }
+
+  /* Re-target animations to the new page-title structure */
+  #auth-state-signedin .line-1,
+  #auth-state-signedin .line-2 {
+    animation: signedin-rise 350ms ease-out both;
+  }
+  #auth-state-signedin .auth-member-email-line {
+    animation: signedin-fade 350ms ease-out 80ms both;
+  }
+  #auth-state-signedin #auth-signout-btn {
+    animation: signedin-fade 350ms ease-out 80ms both;
+  }
+
+  /* Email line: override page-sub uppercase so addresses stay readable */
+  .auth-member-email-line {
+    text-transform: none;
+    overflow-wrap: anywhere;
+    margin-bottom: 24px;
   }
 
   /* State transitions */
@@ -1820,8 +1834,11 @@
 
       <!-- STATE: signed-in (established member) -->
       <div id="auth-state-signedin" class="auth-state" style="display:none;">
-        <p class="auth-member-name" id="auth-member-name"></p>
-        <p class="auth-member-email" id="auth-member-email"></p>
+        <h1 class="page-title">
+          <span class="line-1" id="auth-member-name"></span>
+          <span class="line-2">Paré à drifter ?</span>
+        </h1>
+        <p class="page-sub auth-member-email-line" id="auth-member-email"></p>
         <button class="auth-btn-secondary" id="auth-signout-btn" type="button">Se déconnecter</button>
       </div>
 
@@ -2564,9 +2581,13 @@ function startResendLockdown() {
 function showSignedInState(firstName, email) {
   const nameEl  = getAuthEl('auth-member-name');
   const emailEl = getAuthEl('auth-member-email');
-  if (nameEl)  nameEl.textContent  = firstName || '';
-  if (emailEl) emailEl.textContent = `Connecté en tant que ${email}`;
-  showAuthState('auth-state-signedin', firstName ? `Bonjour ${firstName}.` : 'Connecté.');
+  // Display name is the first name (uppercase rendering handled by CSS); fall back
+  // to "MEMBRE" when no real first name is set (placeholder/empty case).
+  const displayName = firstName ? firstName : 'MEMBRE';
+  if (nameEl)  nameEl.textContent  = displayName;
+  if (emailEl) emailEl.textContent = email || '';
+  // Tagline is constant ("Paré à drifter ?"), already in the HTML.
+  showAuthState('auth-state-signedin', `${displayName}. Paré à drifter ?`);
 }
 
 document.addEventListener('supabase-client-ready', () => { initAuth(); });
