@@ -1491,19 +1491,54 @@
   }
   .auth-link-btn:not(:disabled):hover { opacity: 0.7; }
 
-  /* Signed-in panel */
-  .auth-member-name {
-    font-family: var(--font-sub);
-    text-transform: uppercase;
-    font-size: 28px;
-    line-height: 1;
-    margin-bottom: 6px;
-    letter-spacing: 0.01em;
+  /* Signed-in panel — peach card greeting */
+  @keyframes signedin-rise {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: translateY(0); }
   }
-  .auth-member-email {
+  @keyframes signedin-fade {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+  }
+  /* Suppress parent bulk-fade so child keyframes control the entrance */
+  #auth-state-signedin { transition: none; }
+
+  .signedin-card {
+    background: var(--peach);
+    border-radius: var(--radius);
+    padding: 28px 28px 28px;
+    max-width: 400px;
+    margin: 0 auto;
+  }
+  .signedin-name {
+    font-family: var(--font-sub);
+    font-size: clamp(40px, 8vw, 72px);
+    line-height: 0.92;
+    text-transform: uppercase;
+    letter-spacing: -0.02em;
+    color: var(--blue);
+    margin: 0;
+    animation: signedin-rise 350ms ease-out both;
+  }
+  .signedin-tagline {
+    font-family: 'Inter', system-ui, sans-serif;
+    font-style: italic;
+    font-size: 1rem;
+    color: var(--graphite);
+    margin: 4px 0 0;
+    animation: signedin-rise 350ms ease-out both;
+  }
+  .signedin-email {
+    font-family: var(--font-mono);
+    font-size: 0.875rem;
+    letter-spacing: 0.08em;
     color: var(--text-muted);
-    font-size: 0.88rem;
-    margin-bottom: 28px;
+    margin: 24px 0 0;
+    animation: signedin-fade 350ms ease-out 80ms both;
+  }
+  #auth-signout-btn {
+    margin-top: 24px;
+    animation: signedin-fade 350ms ease-out 80ms both;
   }
 
   /* State transitions */
@@ -1820,8 +1855,11 @@
 
       <!-- STATE: signed-in (established member) -->
       <div id="auth-state-signedin" class="auth-state" style="display:none;">
-        <p class="auth-member-name" id="auth-member-name"></p>
-        <p class="auth-member-email" id="auth-member-email"></p>
+        <div class="signedin-card">
+          <p class="signedin-name" id="auth-member-name"></p>
+          <p class="signedin-tagline" id="auth-member-tagline">Paré à drifter ?</p>
+          <p class="signedin-email" id="auth-member-email"></p>
+        </div>
         <button class="auth-btn-secondary" id="auth-signout-btn" type="button">Se déconnecter</button>
       </div>
 
@@ -2564,9 +2602,13 @@ function startResendLockdown() {
 function showSignedInState(firstName, email) {
   const nameEl  = getAuthEl('auth-member-name');
   const emailEl = getAuthEl('auth-member-email');
-  if (nameEl)  nameEl.textContent  = firstName || '';
-  if (emailEl) emailEl.textContent = `Connecté en tant que ${email}`;
-  showAuthState('auth-state-signedin', firstName ? `Bonjour ${firstName}.` : 'Connecté.');
+  // Display name is the first name (uppercase rendering handled by CSS); fall back
+  // to "MEMBRE" when no real first name is set (placeholder/empty case).
+  const displayName = firstName ? firstName : 'MEMBRE';
+  if (nameEl)  nameEl.textContent  = displayName;
+  if (emailEl) emailEl.textContent = email || '';
+  // Tagline is constant ("Paré à drifter ?"), already in the HTML.
+  showAuthState('auth-state-signedin', `${displayName}. Paré à drifter ?`);
 }
 
 document.addEventListener('supabase-client-ready', () => { initAuth(); });
