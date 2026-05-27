@@ -2,194 +2,197 @@
 
 ## EM resolutions (read first)
 
-1. **Branch.** `fix/auth-cleanup`, branched from a freshly-pulled `main`. Per `feedback_branch_base_discipline`: run `git rev-parse --abbrev-ref HEAD` and `git log --oneline origin/main -5` before `git checkout -b` to confirm you're branching off the right base.
-2. **Scope is `index.html` only.** No SQL, no migration, no Supabase dashboard change. The DB side (members table, RLS policies, on_auth_user_created trigger) is already correct and stays untouched.
-3. **No new external dependencies.** Same supabase-js CDN import. Vanilla JS only.
-4. **Pin the SDK minor.** Change the CDN import from `@supabase/supabase-js@2/+esm` to `@supabase/supabase-js@2.49/+esm` (the current latest minor of the v2 line as of the audit date). This prevents the SDK from shifting auth defaults under us mid-deploy — which is the exact failure mode documented in `feedback_supabase_flowtype` (defaults silently flipped to PKCE, broke magic links).
+1. **Branch.** `fix/auth-cleanup`. Already in flight — the implementer has one commit on it (`c89a681`). This amendment supersedes specific items in the original brief. Add a NEW commit on top of `c89a681`; do NOT amend or rebase.
+2. **Scope is `index.html` only.** No SQL, no migration, no Supabase dashboard change.
+3. **No new external dependencies.** Same supabase-js CDN import.
+4. **Keep the SDK minor pinned** to `@supabase/supabase-js@2.49/+esm`.
+5. **Why this amendment exists — read carefully.** The first iteration (`c89a681`) kept the `getSession()` call at startup with a 10 s timeout. Local browser testing exposed that this was the wrong fix. The actual SDK behaviour on session-restore-from-storage is:
+   - The SDK fires `onAuthStateChange` SIGNED_IN at ~100 ms — that correctly rendered the signed-in UI (all 5 nav tabs visible).
+   - But the SDK's internal init then hung validating the stored token against the server (known issue [supabase#35754](https://github.com/supabase/supabase/issues/35754)). All subsequent `supabase.from(...)` queries and the in-flight `getSession()` queued behind that stuck init — so the data fetchers ran but never returned, leaving the page signed-in with empty tabs.
+   - At t=10 s, our `Promise.race` timeout fired, the `catch` branch called `setAuthUIState(false)`, and **our own code demoted the user from signed-in to anonymous.** The timeout actively caused the regression rather than masking it.
+
+   The correct fix is to **stop calling `getSession()` at startup entirely**. Use `onAuthStateChange` (handling both `INITIAL_SESSION` and `SIGNED_IN`) as the single source of truth, with a 3 s safety-net timer that defaults to anonymous only if no event fires at all. This is the canonical pattern in current Supabase docs: the listener IS the source of truth; getSession at startup is redundant.
 
 ---
 
 ## Goal
 
-Replace the current auth scaffolding in [index.html](../../index.html) with a single, canonical, supabase-js-v2 magic-link flow for a vanilla-JS client-only site. Fix two user-reported bugs in the process:
+Same as the original brief — fix the two user-reported bugs and collapse the auth client to one canonical path. The two bugs:
 
-1. **Blank-page magic-link failure.** Clicking a magic link sometimes lands on a fully blank page with `#access_token=…` still in the URL.
-2. **Auto sign-out on revisit.** Closing the tab and returning to the site logs the user out even though a valid session is in localStorage.
-
-Both bugs trace to the same root cause: the page does **two** racing hash-consumption paths (SDK auto-detect + manual `setSession`), **two** separate `getSession()` calls, and a too-aggressive 3 s timeout that abandons normal token refresh. The cleanup collapses everything to one path and fixes the timeout.
-
-## Background — why this brief exists
-
-EM audit summary (full version is in chat history; reproduced briefly here):
-
-- For a **vanilla-JS, static, client-only** site, the canonical supabase-js v2 magic-link setup is: `createClient(URL, KEY, { auth: { flowType: 'implicit', detectSessionInUrl: true } })` → SDK auto-consumes the `#access_token` hash on load → one `getSession()` call at startup + `onAuthStateChange` listener for everything after. That is the entire pattern, per the official [Implicit flow](https://supabase.com/docs/guides/auth/sessions/implicit-flow) and [Passwordless email logins](https://supabase.com/docs/guides/auth/auth-email-passwordless) docs.
-- DRC's current code adds: a redundant manual `URLSearchParams` + `setSession` hash parser, a second `getSession()` inside `initAuth()`, two separate ready-events plus a debounce boolean, a 3 s hard timeout on `getSession`, and a 400 ms defensive timer on `signOut`. All of this exists because the original author hit one or more SDK quirks and bolted on workarounds. The workarounds now race with each other.
-- The `getSession()` hang is a real, currently-open supabase-js bug ([supabase#35754](https://github.com/supabase/supabase/issues/35754)). The community workaround is a `Promise.race` with a **10 s** timeout, not 3 s. 3 s is short enough to trip on a normal refresh-token round-trip over a slow mobile connection — which is exactly the auto-sign-out symptom.
+1. **Blank-page magic-link failure** (fixed in `c89a681` by removing the manual hash-parse race — verified passing in local testing).
+2. **Auto sign-out on revisit** (NOT fixed by `c89a681` — the 10 s timeout was the wrong tool; this amendment removes `getSession()` at startup).
 
 ## Stack constraint
 
-Vanilla JS, single `index.html`, inline styles. No build pipeline, no bundler, no npm. Supabase JS SDK already on the page via CDN ESM. Auth calls remain `supabase.auth.signInWithOtp()`, `supabase.auth.signOut()`, `supabase.auth.onAuthStateChange()`, `supabase.auth.getSession()`. No new external dependencies.
+Vanilla JS, single `index.html`, inline styles. No build pipeline. Auth calls are `supabase.auth.signInWithOtp()`, `supabase.auth.signOut()`, `supabase.auth.onAuthStateChange()`. **`supabase.auth.getSession()` is removed entirely from this file by this amendment.**
 
-## What to delete
+## What to delete (amendment — IN ADDITION to deletions already in `c89a681`)
 
-Be precise about line ranges — these are the only blocks affected. Existing line numbers refer to `main` at the time this brief was written.
+1. **The entire `Promise.race` block** at [index.html:1941-1956](../../index.html#L1941-L1956) — `try { const { data: { session } } = await Promise.race([supabase.auth.getSession(), …timeout…]); if (session) {…} else {…} } catch (e) { …setAuthUIState(false) }`. This is the block that demoted signed-in users to anonymous on the 10 s timeout. Replace it with the new pattern below.
 
-1. **Manual hash parser** ([index.html:1882-1912](../../index.html#L1882-L1912)) — the `if (window.location.hash && window.location.hash.includes('access_token=')) { … setSession(…) … }` block. SDK's `detectSessionInUrl: true` already does this; the manual path races with it and has no timeout, which is the root cause of the blank-page bug.
-2. **Second `getSession()` call** ([index.html:2534-2538](../../index.html#L2534-L2538)) inside `initAuth()`. The module script's `getSession()` at line 1929 already covers initial session detection; `onAuthStateChange`'s SIGNED_IN event (which fires for the initial session restore too) handles the UI transition into the signed-in state.
-3. **`supabase-client-ready` event + `_dataFetchersTriggered` debounce flag** ([index.html:1917](../../index.html#L1917), [1944](../../index.html#L1944), [1949](../../index.html#L1949), [2499-2502](../../index.html#L2499-L2502)). Collapse to a single `supabase-ready` event dispatched exactly once.
-4. **`signOut` 400 ms fallback timer** ([index.html:2470-2480](../../index.html#L2470-L2480)). The SDK fires `SIGNED_OUT` on `onAuthStateChange` reliably after `signOut()` resolves; the defensive timer just papered over a transient symptom that, if it ever recurred, deserves a console error rather than silent UI correction.
+(All other deletions from `c89a681` stay deleted.)
 
-## What to add / change
+## What to add / change (amendment — replaces items 5 and 6 of the original brief)
 
-5. **Bump the `getSession()` timeout from 3 s → 10 s** in the module script ([index.html:1929-1932](../../index.html#L1929-L1932)). Keep the `Promise.race` pattern — the [supabase#35754](https://github.com/supabase/supabase/issues/35754) hang is real and unresolved. 10 s is the community-validated workaround value: long enough to absorb a slow refresh-token round-trip on a flaky mobile connection, short enough that a genuinely-broken SDK doesn't strand the page forever.
-6. **Add a one-line regression canary** after the 1 s mark on initial load: if `window.location.hash.includes('access_token=')` is still true 1 second after the module script begins, `console.warn('[DRC] auth: SDK did not consume #access_token hash within 1s — possible SDK regression')`. We deleted the manual fallback in step 1; this canary is how we'd notice if the SDK ever regresses and we need to put a fallback back. Pure observability — no UI change.
-7. **Centralise body-class state transitions** into a single function `setAuthUIState(authenticated)` defined once. Replace every direct `document.body.classList.add/remove('is-authenticated' | 'is-anonymous' | 'is-loading')` call ([index.html:1939-1941](../../index.html#L1939-L1941), [1947-1948](../../index.html#L1947-L1948), [2475-2477](../../index.html#L2475-L2477), [2493-2494](../../index.html#L2493-L2494), [2506-2507](../../index.html#L2506-L2507)) with a call to `setAuthUIState(true)` or `setAuthUIState(false)`. The function also handles the anonymous-mode default-tab switch (currently inline at [index.html:1956-1963](../../index.html#L1956-L1963)) so all UI consequences of an auth state change live in one place.
-8. **Pin SDK minor.** Change [index.html:1864](../../index.html#L1864) from `@supabase/supabase-js@2/+esm` to `@supabase/supabase-js@2.49/+esm`. Same SDK semantics today, immune to surprise default flips tomorrow.
+1. **No `getSession()` call.** The module script must not call `supabase.auth.getSession()` anywhere. Verified by `grep -c 'getSession()' index.html` returning `0`.
 
-## Target shape — the canonical flow
+2. **Handle `INITIAL_SESSION` in `onAuthStateChange`.** In supabase-js v2.49, the SDK fires `INITIAL_SESSION` shortly after `createClient` with the storage-restored session (or `null` if none). This is the primary signal for "what's the user's session at startup".
 
-The module script at the bottom of `index.html` should look approximately like this (illustrative — not a literal find-and-replace; the implementer adapts to existing style):
+3. **Defensive — accept first-firing `SIGNED_IN` as initial auth too.** Older v2 minors and the magic-link callback flow may fire `SIGNED_IN` as the first session-bearing event. The new pattern uses "first session-bearing event wins" semantics: whichever of `INITIAL_SESSION (with session)` or `SIGNED_IN (with session)` fires first sets the initial UI state. A single boolean latch `_initialAuthHandled` prevents the initial path from running twice.
+
+4. **3-second safety-net timer.** If neither `INITIAL_SESSION` nor `SIGNED_IN` has fired within 3 s of page load, default to anonymous. Normal SDK behaviour fires `INITIAL_SESSION` within ~100 ms; the 3 s fallback only trips on a genuinely broken SDK state. Log a `console.warn` when it trips. Crucially, **the fallback only fires if `_initialAuthHandled === false`**, so it cannot demote a session the listener already established.
+
+5. **Module script is no longer top-level-`await`.** With the `getSession()` await gone, the script runs synchronously top to bottom. Confirm this.
+
+6. **Keep the regression canary** (the 1-second `console.warn` if `#access_token=` is still in the URL after page load — already present in `c89a681`). Unchanged.
+
+## Target shape — the canonical flow (replaces the previous target shape)
+
+The module script's auth section should look approximately like this. Style and formatting follow the existing file; this is the **flow**, not the literal text to paste.
 
 ```js
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49/+esm';
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
   auth: {
-    flowType: 'implicit',          // correct for vanilla-JS static SPA (no SSR)
-    detectSessionInUrl: true,      // SDK auto-consumes #access_token=... from magic links
-    // persistSession + autoRefreshToken default to true; do not override
+    flowType: 'implicit',
+    detectSessionInUrl: true,
+    // persistSession + autoRefreshToken default to true; do not override.
   },
 });
 window.supabase = supabase;
 
-// Centralised UI state transition. Called from initial-session resolver and onAuthStateChange.
-function setAuthUIState(authenticated) {
-  document.body.classList.remove('is-loading', 'is-authenticated', 'is-anonymous');
-  document.body.classList.add(authenticated ? 'is-authenticated' : 'is-anonymous');
-  if (!authenticated) {
-    // Anonymous default tab: Saison 01, not Calendrier
-    document.querySelector('.tab-btn[data-tab="calendar"]')?.classList.remove('active');
-    document.querySelector('.tab-btn[data-tab="saison"]')?.classList.add('active');
-    document.getElementById('tab-calendar')?.classList.remove('active');
-    document.getElementById('tab-saison')?.classList.add('active');
+// setAuthUIState(authenticated) — unchanged from c89a681.
+// dispatchSupabaseReady() + _readyDispatched latch — unchanged from c89a681.
+
+// Initial-auth latch: flips true on the first session-bearing event
+// (INITIAL_SESSION or SIGNED_IN), OR on the 3s safety-net fallback.
+// Guards the initial path from running twice, and — critically — prevents
+// the safety-net fallback from demoting an already-restored session.
+let _initialAuthHandled = false;
+
+function handleInitialAuth(session) {
+  if (_initialAuthHandled) return;
+  _initialAuthHandled = true;
+  if (session) {
+    setAuthUIState(true);
+    dispatchSupabaseReady();
+    handleSignedIn(session.user);
+  } else {
+    setAuthUIState(false);
   }
 }
 
-// Single dispatch latch for the data-fetcher event (renderRaces / loadSessions / loadResources).
-let _readyDispatched = false;
-function dispatchSupabaseReady() {
-  if (_readyDispatched) return;
-  _readyDispatched = true;
-  document.dispatchEvent(new CustomEvent('supabase-ready'));
-}
-
-// onAuthStateChange handles every transition: initial restore, magic-link callback, sign-out,
-// silent token refresh. Wired BEFORE getSession() so the initial SIGNED_IN event is not missed.
 supabase.auth.onAuthStateChange((event, session) => {
-  if (event === 'SIGNED_IN' && session) {
-    setAuthUIState(true);
-    dispatchSupabaseReady();
-    handleSignedIn(session.user);  // existing function — first_name fetch + signed-in card
+  if (event === 'INITIAL_SESSION') {
+    // Fires once shortly after createClient with the storage-restored session
+    // (or null). In supabase-js v2.49 this is the primary signal for restoring
+    // a session from localStorage. Handle it as the initial-auth gate.
+    handleInitialAuth(session);
+  } else if (event === 'SIGNED_IN' && session) {
+    if (!_initialAuthHandled) {
+      // SDK fired SIGNED_IN as the first session-bearing event (older v2
+      // behaviour, or a SDK version that skips INITIAL_SESSION). Treat it
+      // as the initial-auth signal.
+      handleInitialAuth(session);
+    } else {
+      // Post-initial sign-in: page already rendered anonymous after an
+      // INITIAL_SESSION(null), then the SDK consumed the magic-link hash and
+      // fires SIGNED_IN with the new session. Transition forward; do not
+      // re-run the initial gate.
+      setAuthUIState(true);
+      dispatchSupabaseReady();
+      handleSignedIn(session.user);
+    }
   } else if (event === 'SIGNED_OUT') {
     setAuthUIState(false);
     if (typeof activateTab === 'function') activateTab('saison');
     if (typeof showAuthState === 'function') showAuthState('auth-state-signout', 'Déconnecté.');
   }
-  // TOKEN_REFRESHED, INITIAL_SESSION: no UI change needed.
+  // TOKEN_REFRESHED, USER_UPDATED, PASSWORD_RECOVERY: no UI change required.
 });
 
-// One getSession at startup, raced against a 10s timeout to defend against the
-// known supabase-js hang (github.com/supabase/supabase/issues/35754).
-// If we time out, we render anonymous; onAuthStateChange will still upgrade us
-// to authenticated if the SDK eventually catches up.
-try {
-  const { data: { session } } = await Promise.race([
-    supabase.auth.getSession(),
-    new Promise((_, r) => setTimeout(() => r(new Error('getSession timeout (10s)')), 10000)),
-  ]);
-  if (session) {
-    setAuthUIState(true);
-    dispatchSupabaseReady();
-    // Do NOT call handleSignedIn here — onAuthStateChange fires INITIAL_SESSION/SIGNED_IN
-    // immediately after getSession resolves, and that handler calls handleSignedIn.
-  } else {
-    setAuthUIState(false);
+// Safety-net: INITIAL_SESSION normally fires within ~100ms. If 3s elapses
+// without any session-bearing event, default to anonymous. The latch check
+// inside handleInitialAuth means this can never downgrade a session the
+// listener already restored — it only catches the "SDK never fired anything"
+// failure mode.
+setTimeout(() => {
+  if (!_initialAuthHandled) {
+    console.warn('[DRC] no initial auth event within 3s — defaulting to anonymous');
+    handleInitialAuth(null);
   }
-} catch (e) {
-  console.error('[DRC] getSession timed out; defaulting to anonymous view.', e);
-  setAuthUIState(false);
-}
+}, 3000);
 
-// Regression canary — if SDK ever fails to consume the hash, we hear about it in console
-// before users start reporting blank pages.
+// Regression canary — unchanged from c89a681.
 setTimeout(() => {
   if (window.location.hash && window.location.hash.includes('access_token=')) {
     console.warn('[DRC] auth: SDK did not consume #access_token hash within 1s — possible SDK regression');
   }
 }, 1000);
 
-// initAuth() is still called to wire the sign-in form / resend / change-email / signout buttons.
-// It MUST NOT call getSession() itself anymore — the module script above is the single source of truth.
 initAuth();
 ```
 
-The exact wiring may differ — the implementer should respect existing function shapes (`handleSignedIn`, `initAuth`, `showAuthState`, `activateTab`, etc.) and not rename or relocate them. The skeleton above is the **flow**, not the literal text to paste.
-
 ## Things that stay untouched
 
-- `handleSignedIn()` ([index.html:2541-2554](../../index.html#L2541-L2554)) — first_name fetch + signed-in card.
-- `sendMagicLink()` / `signInWithOtp` form-submit logic ([index.html:2363-2417](../../index.html#L2363-L2417)) — the sign-in UI, resend lockdown, error mapping.
-- Magic-link error parser ([index.html:2515-2532](../../index.html#L2515-L2532)) — `#error=…&error_description=…` handling. Implicit-flow errors arrive in the hash; this code is correct.
-- `is-loading` CSS rule ([index.html:1539-1542](../../index.html#L1539-L1542)) — the initial loading mask stays; `setAuthUIState` removes it on the first state transition.
-- Compte tab UI, sign-in / resend / sign-out form copy, all French strings.
+Unchanged from `c89a681`:
+- `setAuthUIState`, `dispatchSupabaseReady`, `_readyDispatched` latch.
+- `handleSignedIn()`.
+- The trimmed `initAuth()` body (no inline `getSession()`, no `onAuthStateChange` block, no signOut fallback timer).
+- The `#error=...` magic-link error parser inside `initAuth`.
+- `sendMagicLink()` / `signInWithOtp` form-submit logic.
+- The SDK `@2.49` pin.
+- The 1-second hash-leftover regression canary.
 - All RLS policies, migrations, `members` table, `on_auth_user_created` trigger.
+- All Compte tab UI, copy, and French strings.
 
 ## Acceptance criteria
 
-Functional (must pass):
-- [ ] Cold-load magic-link click → page renders signed-in within ~2 s, `#access_token=…` is stripped from the URL, no console errors.
-- [ ] Already-signed-in revisit (close tab → reopen) → page renders signed-in directly, no flash of anonymous, no spurious sign-in card.
-- [ ] Already-signed-in revisit after >1 h (access token expired, refresh token valid) → SDK refreshes the access token transparently; page lands signed-in without prompting for a new magic link. The 10 s timeout must not trip under normal network conditions.
-- [ ] Anonymous visitor → Compte tab on Saison 01 by default, sign-in form visible and functional.
-- [ ] Sign-in → confirmation panel transition, magic link arrives, click → signed-in. No blank page.
-- [ ] Sign-out → returns to anonymous view immediately (no 400 ms wait, no fallback warning in console).
-- [ ] Expired or already-used magic link → French error message shown inline, hash cleared.
-- [ ] Network flakiness during initial load (devtools "Slow 3G" simulation) → either signed-in within 10 s, or anonymous view with no broken state and the sign-in form ready. No blank page.
+**Code (greppable invariants — updated for the amendment):**
 
-Code (must pass):
-- [ ] Only one `getSession()` call exists in the entire file (`grep 'getSession()' index.html | wc -l` → 1).
-- [ ] Only one `supabase-ready` dispatch site exists (`grep "dispatchEvent.*supabase-ready" index.html | wc -l` → 1). `supabase-client-ready` is removed entirely.
-- [ ] No call to `supabase.auth.setSession(` remains in the file.
-- [ ] No `_dataFetchersTriggered` references remain.
-- [ ] Body-class mutations for `is-authenticated` / `is-anonymous` / `is-loading` happen only inside `setAuthUIState`. (Search the file for `classList.*is-authenticated` / `is-anonymous` / `is-loading` — every match should be inside `setAuthUIState` or the initial HTML `<body class="is-loading">`.)
-- [ ] SDK import URL is pinned to `@supabase/supabase-js@2.49/+esm`.
-- [ ] The 1-second hash-leftover canary is present and uses `console.warn`.
+- [ ] `grep -c 'getSession()' index.html` outputs `0` (was `1` in `c89a681`; this amendment removes it entirely).
+- [ ] `grep -c "Promise.race" index.html` outputs `0`.
+- [ ] `grep -c 'INITIAL_SESSION' index.html` outputs at least `1` (the new event is handled by name).
+- [ ] `grep -c "dispatchEvent.*supabase-ready" index.html` outputs `1` (unchanged).
+- [ ] `grep -c 'supabase.auth.setSession(' index.html` outputs `0` (unchanged).
+- [ ] `grep -c '_dataFetchersTriggered' index.html` outputs `0` (unchanged).
+- [ ] `grep -c 'supabase-client-ready' index.html` outputs `0` (unchanged).
+- [ ] `grep -c '@supabase/supabase-js@2.49/+esm' index.html` outputs `1` (unchanged).
+- [ ] `handleSignedIn` is invoked from exactly the call sites in the target shape — `handleInitialAuth` once per page load, plus the post-initial SIGNED_IN branch. No double-fires for the same session.
+- [ ] The 3 s fallback's call to `handleInitialAuth(null)` runs through the `_initialAuthHandled` early-return guard — confirmed by reading the code, not just by grep.
+- [ ] The module script no longer uses top-level `await` (no `await` keyword outside a function declaration in the module script).
 
-Out of scope:
-- New visual changes (this is a behavioural cleanup; the UI must look identical at every state).
-- Migrating to PKCE flow (a separate decision; would require email-template changes and a `verifyOtp({ token_hash })` callback handler — not needed for a client-only static site).
-- Changing the Compte tab UX, copy, or layout.
-- SMTP / dashboard config changes.
-- Touching any migration, RLS policy, or backend script.
+**Functional (must pass — verified by the EM in a real browser before any push):**
 
-## Testing notes for the reviewer
+- [ ] **Bug 2 regression test, the one that failed in round 1.** In a **regular** (non-incognito) browser window: sign in via magic link, confirm `sb-zglyzryhckxbwsivlotu-auth-token` is in `localStorage`, close the tab, reopen `http://localhost:8000/`. The page must (a) land signed-in with all 5 nav tabs visible, (b) **the data tabs populated** (races, sessions, resources all loaded — not empty), (c) no `[DRC] getSession timed out` message in the console (because there's no getSession to time out), (d) no `[DRC] no initial auth event within 3s` warning either.
+- [ ] **Bug 1 regression** (already passing in `c89a681`, must remain passing): cold-load magic-link click → signed-in within ~2 s, `#access_token=…` stripped, console silent.
+- [ ] Sign-out → returns to anonymous view immediately, no 400 ms delay, no fallback warning.
+- [ ] Expired or already-used magic link → French inline error (unchanged path).
+- [ ] Anonymous visitor → lands on Saison 01 by default, sign-in form functional.
+- [ ] Network flakiness (DevTools "Slow 3G") → either signed-in within ~3 s, or anonymous with the sign-in form ready. No blank page, no demoted-from-signed-in regression.
 
-The two user-reported bugs are the regression-test cases:
+**Out of scope:**
 
-1. **Blank-page magic-link.** Hard to reproduce on demand because it requires the SDK auto-detect + manual `setSession` to race in a particular order. To validate the fix: request a magic link in an incognito window, click it from email, confirm the page renders signed-in within 2 s and the hash is gone. Repeat 5 times to catch any residual race.
+Same as original brief — no UI changes, no PKCE migration, no dashboard changes. The Compte tab UX is untouched.
 
-2. **Auto sign-out on revisit.** To validate: sign in, close the tab, wait ≥1 hour (so the access token expires), reopen `derapage.xyz`. Expected: signed-in state restored within ~2 s with no sign-in card flash. If the 10 s timeout trips on a healthy network, that's a regression — bump it or report the SDK timing back to the EM.
+## Testing notes for the reviewer (round 2)
 
-DevTools verification:
-- Network tab: confirm exactly one `/auth/v1/token?grant_type=refresh_token` call on revisit-after-1h (no manual extra round-trips).
-- Console: clean except for the one-time `[DRC] auth: SDK did not consume…` warning IF (and only if) the SDK regresses — should be silent in the happy path.
-- Application → Local Storage: the `sb-<project-ref>-auth-token` key persists across tab close.
+Reviewer round 1 was static-only and correctly reported `LGTM` against the brief as written. The brief itself was wrong — the runtime regression was only caught when the EM ran the local browser test. The reviewer for round 2 should:
+
+1. Re-run all greppable invariants above.
+2. Trace the latch logic: confirm the 3 s fallback's call to `handleInitialAuth(null)` cannot downgrade a session restored by the listener, by reading `handleInitialAuth`'s early-return guard.
+3. Confirm `handleSignedIn` cannot be called twice for the same session, even across the INITIAL_SESSION → SIGNED_IN ordering.
+4. Confirm `dispatchSupabaseReady` still has once-only semantics.
+5. Verify no top-level `await` remains in the module script.
+6. Confirm the diff vs `c89a681` is purely additive/replacement of the Promise.race block — no other file regions touched.
+
+The reviewer's verdict gates the next round of EM-driven local browser testing, which is the actual ship gate.
 
 ## References
 
-- [Supabase: Passwordless email logins](https://supabase.com/docs/guides/auth/auth-email-passwordless) — canonical client-only magic-link skeleton
-- [Supabase: Implicit flow](https://supabase.com/docs/guides/auth/sessions/implicit-flow) — why implicit is correct for client-only and what `detectSessionInUrl` does
-- [Supabase: User sessions](https://supabase.com/docs/guides/auth/sessions) — `getSession` + `onAuthStateChange` best practice (one of each, not many)
-- [supabase#35754](https://github.com/supabase/supabase/issues/35754) — open bug confirming `getSession()` / `getUser()` can hang; 10 s `Promise.race` is the community workaround
-- Internal memory `feedback_supabase_flowtype.md` — context on why `flowType: 'implicit'` stays explicit (defaults flipped to PKCE in a past SDK minor and silently broke us)
-- Internal memory `feedback_branch_base_discipline.md` — verify HEAD before branching
+- [supabase#35754](https://github.com/supabase/supabase/issues/35754) — open SDK init hang. The amendment side-steps it by removing the `getSession` await; even if the SDK's internal init still hangs on token validation, the UI is already correctly set by `onAuthStateChange INITIAL_SESSION` / `SIGNED_IN` and stays signed-in.
+- [Supabase: User sessions](https://supabase.com/docs/guides/auth/sessions) — `onAuthStateChange` as the source of truth, getSession is for one-off reads not startup gates.
+- [Supabase: Implicit flow](https://supabase.com/docs/guides/auth/sessions/implicit-flow) — flow choice justification (unchanged).
+- Internal memory `feedback_supabase_flowtype.md` — keep `flowType: 'implicit'` explicit.
+- Internal memory `feedback_branch_base_discipline.md` — verify HEAD before branching (still on `fix/auth-cleanup`, do not start a new branch).
