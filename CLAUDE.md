@@ -6,7 +6,7 @@
 
 ## Project overview
 
-Static website for **Dérapage Running Club (DRC)**, a Paris-based FFA-affiliated running club (~45 members), founded June 2025. It is intended primarily for club members (training sessions, race calendar, internal resources), but it is technically publicly reachable — it is deployed on GitHub Pages at `https://<username>.github.io/drc-internal/` with no access control. Content is non-sensitive; the site is unlisted (`robots.txt` blocks crawlers, `<meta name="robots" content="noindex, nofollow">`) but not private.
+Single-page website for **Dérapage Running Club (DRC)**, a Paris-based FFA-affiliated running club (~45 members), founded June 2025. One inline `index.html` deployed on GitHub Pages, **backed by Supabase** (Postgres for content — sessions, races, resources — plus Auth for member sign-in). It serves club members (training sessions, race calendar, internal resources) but is technically publicly reachable at `https://<username>.github.io/drc-internal/`. Content read access is currently public; the site is unlisted (`robots.txt` blocks crawlers, `<meta name="robots" content="noindex, nofollow">`) but not private. A members-only gate (RLS restricting reads to authenticated users) is in progress on a feature branch — **not yet on `main`**.
 
 **Owner / main contact:** Alexandre Saillard (sports director)
 **Instagram:** [@derapagerunningclub](https://www.instagram.com/derapagerunningclub/)
@@ -24,7 +24,7 @@ Every Claude Code session in this repo runs as an **Engineering Manager (EM)**. 
 - **Never write SQL, RLS policies, or migration scripts directly.** Those go through the `backend` subagent.
 - **Never commit or push code changes yourself.** The worker (implementer or backend) commits; the EM reviews the diff, then pushes.
 - **Never open a PR without the reviewer's `LGTM`** (or an explicit user override).
-- **`sessions.json` is the only data file the EM may edit directly** — weekly session data entries are mechanical and contain no logic. Any structural change to the schema goes through the implementer (for the JSON) or the backend agent (for Supabase tables).
+- **Weekly session data is no longer edited in this repo.** Sessions, races and resources now live in Supabase (`public.sessions`, `public.races`, `public.resources`). New weekly sessions are inserted into the DB by the **`drc-publish-session` skill** (in the parent DRC project) via `supabase/scripts/insert_session.sh` — not by editing a file here. Any change to the table *schema* goes through the `backend` subagent (migrations under `supabase/migrations/`).
 
 ### What the EM owns
 
@@ -34,7 +34,7 @@ Every Claude Code session in this repo runs as an **Engineering Manager (EM)**. 
 - Scoping tasks and writing prompts for subagents — including the brief path and the branch name
 - Reviewing subagent handoffs: reading diffs, checking acceptance criteria, routing punch lists
 - Pushing approved branches and opening PRs (with user confirmation)
-- Mechanical `sessions.json` updates (weekly session data, no schema changes)
+- Running `supabase/scripts/*.sh` helpers for mechanical DB data ops (e.g. `insert_session.sh`) — though weekly session inserts are normally handled by the `drc-publish-session` skill, not by hand here
 - **Infrastructure audits and migration scoping** — when a large architectural change is being considered (e.g. moving from a static single-file site to a dynamic stack, extracting `races[]` into `races.json`, introducing a build pipeline), the EM reads the current codebase in full, maps every dependency and coupling that would be affected, estimates the work surface, identifies risks, and produces a structured gap analysis: current state → desired state → what changes, in what order, at what cost. This is a research and planning output delivered in chat — no code is written during an audit. The EM presents the findings to the user before any implementation is agreed.
 
 ### Infrastructure audit format
@@ -52,8 +52,8 @@ When asked to scope a large change, produce a report with these sections:
 | Agent | Invoke when |
 |---|---|
 | `designer` | Visual direction is unclear or needs external research before the implementer can act. Covers both public site and admin UI (utilitarian where the public site is editorial). Skip for mechanical or obviously-scoped changes. |
-| `implementer` | Any change to `index.html`, `sessions.json`, or any browser-side JS (including Supabase JS SDK calls). Also `admin.html` if/when that file is ever built — none today. Always supply the branch name and brief path. |
-| `backend` | Any change under `supabase/migrations/`, `scripts/`, or anything related to Postgres schema, RLS policies, or server-side data plumbing. Always supply the branch name and the relevant audit/brief. |
+| `implementer` | Any change to `index.html` or any browser-side JS (including Supabase JS SDK calls). Also `admin.html` if/when that file is ever built — none today. Always supply the branch name and brief path. |
+| `backend` | Any change under `supabase/migrations/`, `supabase/scripts/`, or anything related to Postgres schema, RLS policies, or server-side data plumbing. Always supply the branch name and the relevant audit/brief. |
 | `reviewer` | After every implementer or backend commit, before pushing. Returns `LGTM` or a numbered punch list. Max 3 worker–reviewer rounds before escalating to the user. |
 
 ### Orchestration loop
@@ -69,11 +69,10 @@ When asked to scope a large change, produce a report with these sections:
 
 ## Tech stack & architecture
 
-- **`index.html`** — all CSS, JS, and the base64-encoded logo are inline. No build step, no framework, no external dependencies except Google Fonts (Inter, CDN).
-- **`sessions.json`** — session data for the Entrainement tab. Loaded via `fetch()` at runtime. Edit this file to add/update sessions without touching HTML.
+- **`index.html`** — all CSS, JS, and the base64-encoded logo are inline. No build step, no framework. External dependencies: Google Fonts (Inter, CDN) and the Supabase JS SDK (CDN ESM import).
 - **Vanilla JS only** — no React, no Alpine, no jQuery.
-- **Backend** — Supabase (Postgres + Auth + Storage) is being introduced in stages. As of today the live production site is still fully static: race data hardcoded in `races[]` inside `index.html`, session data in `sessions.json`, VMA in `localStorage`. The schema for Supabase lives at `supabase/migrations/0001_init.sql`; the frontend has not yet been wired to it. See *Secrets & Supabase keys* below for how keys are handled.
-- **No access control on the static site** — the public site is open on GitHub Pages. A client-side password gate used to exist but was removed: on a static site any JS-based gate is trivially bypassable (view-source, disable JS, fetch the JSON directly), so it gave a false sense of privacy. Real access control comes from Supabase Auth + RLS at the data layer once member features are wired — not from JS in this repo.
+- **Backend — Supabase (Postgres + Auth + Storage), live.** `index.html` fetches `sessions`, `races` and `resources` from Supabase tables at runtime (`window.supabase.from('…')`) using the publishable key, and uses Supabase Auth (magic-link sign-in). The old static data files are retired: there is **no `sessions.json` in this repo anymore**, and `races[]` / resource cards are no longer hardcoded in the HTML. Schema + migrations live under `supabase/migrations/`. VMA stays in `localStorage` (intentionally not in the DB). See *Secrets & Supabase keys* below.
+- **Access control** — content reads are currently public (`USING (true)` RLS). A members-only gate restricting reads to authenticated users is in progress on a feature branch (migration `0004`), **not yet merged to `main`**. Real access control comes from Supabase Auth + RLS at the data layer — never from JS in this repo (a client-side gate on a static page is trivially bypassable: view-source, disable JS, hit the API directly).
 
 Do not introduce a build system, a bundler, or a JS framework without explicit instruction.
 
@@ -90,13 +89,13 @@ Supabase issues two long-lived API keys per project. They are handled very diffe
 
 **Publishable key.** A public token that tells Supabase the request is coming from a browser. All authorization happens via RLS policies on the database. Safe to commit into client HTML — the security model assumes any attacker has it. Without an authenticated user session, it can only do what `USING (true)` policies allow.
 
-**Secret key.** Equivalent to a Postgres superuser. Holding it = full read/write/delete on every table, RLS ignored. Required only by server-side scripts (e.g. a one-off bulk-load script under `scripts/`). Never goes in browser code. Never gets committed. Scripts read it via `process.env.SUPABASE_SECRET_KEY` (or equivalent) at runtime, pulled from a local `.env` or password manager.
+**Secret key.** Equivalent to a Postgres superuser. Holding it = full read/write/delete on every table, RLS ignored. Required only by server-side scripts (e.g. `supabase/scripts/insert_session.sh`). Never goes in browser code. Never gets committed. Scripts read it via `SUPABASE_SECRET_KEY` at runtime, sourced from `drc-internal/.env` (mode 600, gitignored).
 
-**`.env.example`** lists `SUPABASE_URL` and `SUPABASE_PUBLISHABLE_KEY` only. The secret key is deliberately omitted from `.env.example` to avoid the "fill in real value → forget → commit" failure mode. When a script under `scripts/` first needs it, that script's README explains how to set it locally.
+**`.env.example`** lists `SUPABASE_URL` and `SUPABASE_PUBLISHABLE_KEY` only. The secret key is deliberately omitted from `.env.example` to avoid the "fill in real value → forget → commit" failure mode. See `supabase/scripts/README.md` for how to set it locally.
 
 **`.env`** is gitignored. Always.
 
-**If a key ever leaks** (screenshot, public repo, CI log): rotate it immediately in the Supabase dashboard. This invalidates every place it was used, so check `scripts/` and `index.html` for hardcoded references afterward.
+**If a key ever leaks** (screenshot, public repo, CI log): rotate it immediately in the Supabase dashboard. This invalidates every place it was used, so check `supabase/scripts/`, `drc-internal/.env`, and `index.html` for hardcoded references afterward.
 
 ---
 
@@ -130,34 +129,30 @@ Tab order in the nav: **Instagram · Calendrier Courses · Entrainement · Resso
 - The follower count (`~450`) is hardcoded — update it manually when needed.
 
 ### Tab 2 — Calendrier Courses *(default tab on load)*
-- Race list for season 2026-2027, rendered from the `races` JS array.
+- Race list for season 2026-2027, fetched from the Supabase `races` table at runtime.
 - Dynamic countdown banner to the next upcoming race (computed in JS from today's date).
 - Three races are marked as **pillar** races (Semi Boulogne, Semi Paris, Marathon Paris) — displayed with a blue left border and "Pilier" badge.
 - No inscription links — intentionally removed.
 
-**To add or edit a race**, modify the `races` array. Each entry:
-```js
-{
-  name: "Race name",
-  dateStr: "YYYY-MM-DD",       // used for countdown + sort logic
-  dateDisplay: "25",           // day number, or null if approx
-  monthDisplay: "Oct",
-  yearDisplay: "2026",
-  approx: false,               // true = show approxText instead of dateDisplay
-  approxText: "Mi-octobre",    // only used when approx: true
-  format: "21.1km",
-  note: "Optional note text",  // displayed as italic tag, omit if not needed
-  pillar: false,               // true = blue left border + Pilier badge
-  confirmed: true              // true = "Confirmée" badge, false = "À confirmer"
-}
+**To add or edit a race**, edit the `public.races` table in Supabase Studio (the table editor in the Supabase dashboard). Columns:
 ```
+name        text      -- race name
+type        text      -- e.g. "21.1km", "42.2km"
+date        date      -- NULL when the date is approximate
+date_label  text      -- e.g. "Mi-octobre" — shown when date IS NULL
+url         text      -- optional
+pillar      boolean   -- true = blue left border + "Pilier" badge
+confirmed   boolean   -- true = "Confirmée", false = "À confirmer"
+note        text      -- optional italic tag
+```
+Schema source of truth: `supabase/migrations/0001_init.sql`. (No `insert_race.sh` helper exists yet — add one under `supabase/scripts/` if race inserts become frequent.)
 
 ### Tab 3 — Entrainement
 - Accordion list of track sessions since August 2025, most recent first.
 - Search bar filters by any text across label, content, venue.
 - **VMA calculator** at the top (see section below).
 
-**To add a new session**, prepend an entry to `sessions.json` (most recent first):
+**To add a new session**, insert a row into the Supabase `public.sessions` table. The normal path is the **`drc-publish-session` skill** (in the parent DRC project), which runs after the Monday WhatsApp message is sent: it calls `supabase/scripts/insert_session.sh` and keeps a local `DRC/sessions.json` backup in sync. Row shape:
 ```json
 {
   "date": "YYYY-MM-DD",
@@ -171,15 +166,15 @@ Tab order in the nav: **Instagram · Calendrier Courses · Entrainement · Resso
 
 Venue values in use: `"Bertrand Dauvin"`, `"Max Roussie"`, `"Métro Château de Vincennes"`.
 
-Session content is plain text — no HTML. The VMA annotator parses it at render time and injects `<span>` badges inline. `sessions.json` is editable directly in the GitHub UI without cloning the repo.
+Session content is plain text — no HTML. The VMA annotator parses it at render time and injects `<span>` badges inline. For a one-off manual insert (outside the skill) you can also edit the `sessions` table directly in Supabase Studio.
 
 ### Tab 4 — Ressources
 - List of internal PDF documents the club shares with members (e.g. *VMA & Seuil*, *Renfo du coureur & mobilité*).
 - Each resource is rendered as a card with: title, short description, an **Ouvrir** icon button (opens the PDF in a new tab) and a **Télécharger** icon button (downloads it). The PDF itself is embedded inline via an `<iframe>` below the header.
-- Resource cards are hardcoded in `index.html` inside `#tab-resources` — there is no JSON data file for resources (yet).
-- PDF files live in the `ressources/` folder at the repo root (e.g. `ressources/vma_seuil.pdf`).
+- Resource cards are fetched from the Supabase `resources` table at runtime (`title`, `description`, `pdf_path`, `preview_path`, `display_order`).
+- PDF files live in the `ressources/` folder at the repo root (e.g. `ressources/vma_seuil.pdf`); only the relative path is stored in the DB.
 
-**To add a new resource:** drop the PDF into `ressources/`, then duplicate an existing `<div class="resource-card">` block in `#tab-resources` and update the title, description, and the two `href` attributes (open + download) plus the `<iframe src>`.
+**To add a new resource:** drop the PDF into `ressources/` (commit it to the repo), then insert a row into `public.resources` via Supabase Studio with the `title`, `description`, and `pdf_path` (e.g. `ressources/vma_seuil.pdf`).
 
 ---
 
@@ -245,18 +240,15 @@ Only after the PR is merged does the change reach the live site.
 
 All changes go through a feature branch + PR (see *Git workflow* above). Once the PR is merged into `main`, GitHub Pages redeploys automatically in ~1 minute.
 
-**Trigger for weekly session updates:** every time Alexandre confirms the Monday WhatsApp message has been sent (see workflow in `../system_prompt.md`), the matching entry must also be prepended to `sessions.json` here. Same PR rule applies — branch, commit, push, open PR, wait for Alexandre's approval before merging.
+**Trigger for weekly session updates:** every time Alexandre confirms the Monday WhatsApp message has been sent (see workflow in `../system_prompt.md`), the session is inserted into Supabase by the **`drc-publish-session` skill** (parent DRC project) — **no PR and no file change in this repo**. The skill runs `supabase/scripts/insert_session.sh` and refreshes the local `DRC/sessions.json` backup. The change is live on the next page load (the site fetches `sessions` from the DB); no GitHub Pages deploy is involved.
 
-**To add a session (weekly update):**
+**To add a session manually (outside the skill):**
 ```bash
-git checkout main && git pull origin main
-git checkout -b session-YYYY-MM-DD
-# Edit sessions.json — prepend new entry at top of array
-git add sessions.json
-git commit -m "séance du DD/MM/YYYY"
-git push -u origin session-YYYY-MM-DD
-gh pr create --fill   # then merge on GitHub
+# from the drc-internal/ repo root, with drc-internal/.env present
+source .env
+printf '%s' "$JSON" | bash supabase/scripts/insert_session.sh
 ```
+The service-role key in `.env` bypasses RLS, so this writes straight to the live DB. Use `printf '%s'` rather than `echo` — zsh's `echo` mangles `\n` escapes in the JSON.
 
 **To update the site layout or logic:**
 Do not edit `index.html` directly. Follow the orchestration loop: scope the task, invoke the `implementer` subagent on a feature branch, run the `reviewer`, then push. See *EM Orchestrator* section above.
@@ -266,7 +258,7 @@ Do not edit `index.html` directly. Follow the orchestration loop: scope the task
 ## What NOT to do
 
 - Do not introduce a custom server (Express, Fastify, Flask, etc.) you have to run and maintain. Supabase (Postgres + Auth + Storage) is the only sanctioned backend layer — see *Tech stack & architecture* and *Secrets & Supabase keys* above.
-- Do not introduce npm / node_modules / a build pipeline for the frontend. (A `scripts/` folder with its own tooling is acceptable for backend one-off migrations — that's the backend agent's lane.)
+- Do not introduce npm / node_modules / a build pipeline for the frontend. (`supabase/scripts/` with shell tooling is acceptable for backend one-off DB ops — that's the backend agent's lane.)
 - Do not create `admin.html` without explicit instruction. Admin-only data editing (sessions, races, resources) currently happens in **Supabase Studio** — the table editor in the project's Supabase dashboard. The agent definitions still reference `admin.html` as forward-looking guardrails for if/when one is built; today it does not exist.
 - Do not remove the base64 logo or replace it with an external URL (site must work offline / file://).
 - Do not commit directly to `main` — always go through a feature branch + PR (see *Git workflow*).
@@ -279,13 +271,11 @@ Do not edit `index.html` directly. Follow the orchestration loop: scope the task
 
 ## Data sources (external, not in this repo)
 
-The following live in a separate Claude Project (`DRC` workspace on Alexandre's Mac) and are manually synced into `index.html`:
+The following live in a separate Claude Project (`DRC` workspace on Alexandre's Mac) and feed the site's content (now stored in Supabase, formerly hardcoded in `index.html`):
 
-| Data | Source |
+| Data | Source → destination |
 |---|---|
-| Weekly sessions | `DRC/sports/whatsapp_history.md` + Google Sheets `DRC PROG H2 2026` (ID: `1yenXpzfpSczJ8Hjw0dgsFMfUf0KWp9v3c5CCvDRT60Y`) → synced into `sessions.json` |
-| Race calendar | `DRC/events/calendrier_courses_2026-2027.md` → hardcoded in `races[]` array in `index.html` |
+| Weekly sessions | `DRC/sports/whatsapp_history.md` + Google Sheets `DRC PROG H2 2026` (ID: `1yenXpzfpSczJ8Hjw0dgsFMfUf0KWp9v3c5CCvDRT60Y`) → Supabase `public.sessions` via the `drc-publish-session` skill (local `DRC/sessions.json` kept as backup) |
+| Race calendar | `DRC/events/calendrier_courses_2026-2027.md` → Supabase `public.races` (via Supabase Studio) |
 | Weekend de Rentrée | `DRC/events/weekend_rentree_2026.md` |
 | Logo | Google Drive — `06_Communication/Logos/Dérapage-logo-rond.png` (base64 in `index.html`) |
-
-Future improvement: extract `races[]` into a `races.json` on the same pattern as `sessions.json`.

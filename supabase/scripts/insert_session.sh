@@ -10,7 +10,7 @@
 #             or 2 (usage / validation error).
 #
 # Required env var:
-#   SUPABASE_SECRET_KEY   — service-role key; lives in ~/.config/drc/.env (mode 600)
+#   SUPABASE_SECRET_KEY   — service-role key; lives in .env at the drc-internal/ repo root (mode 600)
 #
 # Dependencies: curl (ships with macOS), jq (brew install jq)
 
@@ -21,7 +21,7 @@ set -euo pipefail
 # ---------------------------------------------------------------------------
 if [[ -z "${SUPABASE_SECRET_KEY:-}" ]]; then
   echo "error: SUPABASE_SECRET_KEY is not set." >&2
-  echo "       Source ~/.config/drc/.env before running this script." >&2
+  echo "       Source .env (at the drc-internal/ repo root) before running this script." >&2
   exit 2
 fi
 

@@ -38,12 +38,12 @@ Brief documentation (about 40-60 lines) covering:
   - `curl` (ships with macOS)
   - `jq` — `brew install jq` if not already present
 - **The `SUPABASE_SECRET_KEY` env var:**
-  - Lives in `~/.config/drc/.env` with permissions `600`
+  - Lives in `.env` at the `drc-internal/` repo root, permissions `600`
   - File format: `export SUPABASE_SECRET_KEY=sb_secret_...`
-  - The skill (in the DRC parent project) sources this file before invoking the helper. The user can also `source ~/.config/drc/.env` interactively to call the helper from the shell.
+  - The skill (`drc-publish-session`, in the DRC parent project) sources this file before invoking the helper. The user can also `source .env` (from the `drc-internal/` repo root) interactively to call the helper from the shell.
   - **NEVER commit `.env` files anywhere.** The repo's `.gitignore` already excludes `.env`.
 - **`insert_session.sh` usage:**
-  - Stdin form (preferred): `echo "$JSON" | bash supabase/scripts/insert_session.sh`
+  - Stdin form (preferred): `printf '%s' "$JSON" | bash supabase/scripts/insert_session.sh`
   - Argument form: `bash supabase/scripts/insert_session.sh "$JSON"`
   - Show one realistic example with a multi-line `g12` (so the apostrophe/newline handling is illustrated)
   - Show the expected success output (a UUID on stdout) and a sample error response

@@ -26,11 +26,7 @@ root-level `scripts/` folder if one is ever introduced.
 The scripts require `SUPABASE_SECRET_KEY` (the Supabase service-role key).
 This key bypasses Row Level Security — keep it out of any file that touches the repo.
 
-**Where the key lives:**
-
-```
-~/.config/drc/.env
-```
+**Where the key lives:** `.env` at the repo root (`drc-internal/.env`) — gitignored.
 
 File contents:
 
@@ -41,17 +37,18 @@ export SUPABASE_SECRET_KEY=sb_secret_xxxxxxxxxxxxxxxxxxxxxxxx
 Set permissions to `600` so only your user can read it:
 
 ```bash
-chmod 600 ~/.config/drc/.env
+chmod 600 .env
 ```
 
-**To load it into your shell:**
+**To load it into your shell (from the `drc-internal/` repo root):**
 
 ```bash
-source ~/.config/drc/.env
+source .env
 ```
 
-The DRC parent-project Claude skill sources this file automatically before invoking
-any script here. You only need to source it manually when running scripts interactively.
+The DRC parent-project Claude skill (`drc-publish-session`) sources this file automatically
+before invoking any script here. You only need to source it manually when running scripts
+interactively.
 
 **Never commit `.env` files.** The repo's `.gitignore` already excludes `.env`.
 
@@ -67,7 +64,7 @@ Inserts one row into `public.sessions` and prints the generated UUID on success.
 apostrophes or newlines, and does not expose the payload in the process listing.
 
 ```bash
-source ~/.config/drc/.env
+source .env
 printf '%s' "$JSON" | bash supabase/scripts/insert_session.sh
 ```
 
@@ -76,7 +73,7 @@ Note: we use `printf '%s'` instead of `echo` because zsh's built-in `echo` inter
 **Argument form:** JSON is passed as the first positional argument.
 
 ```bash
-source ~/.config/drc/.env
+source .env
 bash supabase/scripts/insert_session.sh "$JSON"
 ```
 
@@ -96,7 +93,7 @@ bash supabase/scripts/insert_session.sh "$JSON"
 ### Realistic example
 
 ```bash
-source ~/.config/drc/.env
+source .env
 
 JSON=$(cat <<'EOF'
 {
@@ -125,7 +122,7 @@ Missing env var:
 
 ```
 error: SUPABASE_SECRET_KEY is not set.
-       Source ~/.config/drc/.env before running this script.
+       Source .env (at the drc-internal/ repo root) before running this script.
 ```
 
 Missing required field:
