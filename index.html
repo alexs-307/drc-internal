@@ -1182,43 +1182,6 @@
     letter-spacing: 0.12em;
     color: var(--graphite);
   }
-  .album-mosaic {
-    display: grid;
-    grid-template-columns: 1.4fr 1fr 1.1fr 1fr;
-    gap: 10px;
-  }
-  .album-mosaic figure {
-    margin: 0;
-    position: relative;
-    border-radius: 6px;
-    overflow: hidden;
-    background: linear-gradient(135deg, var(--bone), var(--blue));
-    height: 240px;
-  }
-  .album-mosaic figure img {
-    width: 100%; height: 100%; object-fit: cover; display: block;
-  }
-  .album-mosaic figcaption {
-    position: absolute; bottom: 0; left: 0; right: 0;
-    padding: 8px 10px;
-    background: linear-gradient(180deg, transparent, rgba(0,0,0,0.4));
-    color: var(--white);
-    display: flex; flex-direction: column; gap: 2px;
-  }
-  .album-mosaic figcaption .meta {
-    font-family: var(--font-mono);
-    font-size: 9px;
-    text-transform: uppercase;
-    letter-spacing: 0.12em;
-    opacity: 0.85;
-  }
-  .album-mosaic figcaption .title {
-    font-family: var(--font-sub);
-    text-transform: uppercase;
-    font-size: 12px;
-    letter-spacing: 0.04em;
-    opacity: 0.9;
-  }
   .album-footer {
     margin-top: 48px;
     padding-top: 24px;
@@ -1248,6 +1211,121 @@
   .album-footer a:hover { text-decoration: underline; }
 
   /* ============================================================
+     SAISON 01 — CAROUSEL (CSS-only, scroll-snap, zero JS)
+     ============================================================ */
+  /* Scroll container — fills the content column, clips the strip */
+  .album-carousel-track-wrap {
+    overflow: hidden;        /* no page-level overflow */
+    /* negative margin trick: pull edge-to-edge within the main padding */
+    margin-left: -24px;
+    margin-right: -24px;
+    padding-left: 24px;
+    padding-right: 24px;
+  }
+
+  /* The actual scrollable strip */
+  .album-carousel-track {
+    display: flex;
+    gap: 10px;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    padding-right: 24px; /* gives the last-card peek a comfortable landing */
+    /* Prevent the strip itself from contributing to page width */
+    width: 100%;
+  }
+  .album-carousel-track::-webkit-scrollbar { display: none; }
+
+  /* Each card — portrait, ~3.5 visible on desktop */
+  .album-carousel-track figure {
+    flex: 0 0 calc((100% - 3 * 10px) / 3.5);
+    margin: 0;
+    position: relative;
+    border-radius: 6px;
+    overflow: hidden;
+    scroll-snap-align: start;
+    /* Bone base for placeholder state */
+    background: var(--bone);
+    aspect-ratio: 3 / 4;
+    /* Shorter than mosaic — lighter feel */
+    max-height: 320px;
+  }
+
+  /* Real photo sits on top; when it errors it hides revealing placeholder */
+  .album-carousel-track figure img {
+    position: absolute;
+    inset: 0;
+    width: 100%; height: 100%;
+    object-fit: cover;
+    display: block;
+    z-index: 2;
+  }
+
+  /* Placeholder tile — behind img, always rendered */
+  .carousel-placeholder {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    /* Subtle diagonal stripe texture echoing the site grid motif */
+    background:
+      repeating-linear-gradient(
+        -45deg,
+        transparent 0 8px,
+        rgba(91,91,91,0.07) 8px 9px
+      ),
+      var(--bone);
+    user-select: none;
+    pointer-events: none;
+  }
+  .carousel-placeholder-num {
+    font-family: var(--font-mono);
+    font-size: 36px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--graphite);
+    line-height: 1;
+    opacity: 0.55;
+  }
+  .carousel-placeholder-label {
+    font-family: var(--font-mono);
+    font-size: 9px;
+    text-transform: uppercase;
+    letter-spacing: 0.18em;
+    color: var(--graphite);
+    opacity: 0.45;
+  }
+
+  /* Caption — reuses mosaic dark-gradient bottom-anchor treatment */
+  .album-carousel-track figcaption {
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    padding: 8px 10px;
+    background: linear-gradient(180deg, transparent, rgba(0,0,0,0.4));
+    color: var(--white);
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    z-index: 3;
+  }
+  .album-carousel-track figcaption .title {
+    font-family: var(--font-sub);
+    text-transform: uppercase;
+    font-size: 12px;
+    letter-spacing: 0.04em;
+    opacity: 0.9;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  /* ============================================================
      V2 — RESPONSIVE
      ============================================================ */
   @media (max-width: 900px) {
@@ -1258,8 +1336,9 @@
     .race-date-col .day { font-size: 28px; }
     .race-name { font-size: 18px; }
     .album-hero { grid-template-columns: 1fr; }
-    .album-mosaic { grid-template-columns: 1fr 1fr; }
-    .album-mosaic figure { height: 200px; }
+    /* Carousel at medium breakpoint: ~3/4 viewport width each card */
+    .album-carousel-track-wrap { margin-left: -20px; margin-right: -20px; padding-left: 20px; padding-right: 20px; }
+    .album-carousel-track figure { flex: 0 0 75vw; max-height: 280px; }
   }
   @media (max-width: 600px) {
     header { padding: 10px 16px; gap: 10px; }
@@ -1329,8 +1408,9 @@
     .resource-body h3 { font-size: 20px; }
     .btn-v2 { padding: 10px 14px; min-height: 44px; }
 
-    .album-mosaic { grid-template-columns: 1fr; }
-    .album-mosaic figure { height: 220px; }
+    /* Carousel at small breakpoint: ~80% viewport width each card */
+    .album-carousel-track-wrap { margin-left: -16px; margin-right: -16px; padding-left: 16px; padding-right: 16px; }
+    .album-carousel-track figure { flex: 0 0 80vw; max-height: 260px; }
 
     .resource-viewer { height: 60vh; min-height: 360px; }
     .resource-head { flex-wrap: wrap; }
@@ -1678,30 +1758,90 @@
       </aside>
     </article>
 
-    <!-- Mosaïque printemps -->
+    <!-- =====================================================
+         SAISON 01 — CAROUSEL
+         9 portrait cards, all real photos. CSS scroll-snap only, zero JS.
+
+         The photos live in photos_saison_01/carousel/ with filenames
+         01-… through 09-…, and are displayed in numeric filename order.
+
+         HOW TO ADD / REPLACE A PHOTO
+           Drop the file into photos_saison_01/carousel/, then update the
+           matching <figure> below: its <img src> and its <figcaption>.
+
+         HOW TO EDIT A CAPTION
+           Find the matching <figure> below and change the text
+           inside its <figcaption>.
+    ====================================================== -->
     <div class="album-section">
       <div class="album-section-head">
-        <h3>La course mais pas que</h3>
+        <h3>La course mais pas que…</h3>
       </div>
-      <div class="album-mosaic">
-        <figure>
-          <img src="photos_saison_01/05-hybride-seuil-vma.jpg" alt="L'esprit du Drift" loading="lazy" onerror="this.style.display='none'">
-          <figcaption><span class="title">L'esprit du Drift</span></figcaption>
-        </figure>
-        <figure>
-          <img src="photos_saison_01/06-semi-paris.jpg" alt="10K de Montmartre — finishers" loading="lazy" onerror="this.style.display='none'">
-          <figcaption><span class="title">10K de Montmartre — finishers</span></figcaption>
-        </figure>
-        <figure>
-          <img src="photos_saison_01/07-cycle-vma-piste.jpg" alt="Renfo collectif · piste" loading="lazy" onerror="this.style.display='none'">
-          <figcaption><span class="title">Renfo collectif · piste</span></figcaption>
-        </figure>
-        <figure>
-          <img src="photos_saison_01/08-cloture-cycle.jpg" alt="Saison bouclée" loading="lazy" onerror="this.style.display='none'">
-          <figcaption><span class="title">Saison bouclée</span></figcaption>
-        </figure>
-      </div>
-    </div>
+      <div class="album-carousel-track-wrap">
+        <div
+          class="album-carousel-track"
+          role="region"
+          aria-label="Galerie — moments de la saison"
+          aria-roledescription="carrousel"
+        >
+
+          <!-- Card 1 -->
+          <figure>
+            <img src="photos_saison_01/carousel/01-cantal.jpeg" alt="Dîner pre-disco party — week-end Haut-Cantal" loading="lazy" onerror="this.style.display='none'">
+            <figcaption><span class="title">Dîner pre-disco party</span></figcaption>
+          </figure>
+
+          <!-- Card 2 -->
+          <figure>
+            <img src="photos_saison_01/carousel/02-cantal.jpeg" alt="En route pour le Haut-Cantal" loading="lazy" onerror="this.style.display='none'">
+            <figcaption><span class="title">En route pour le Haut-Cantal</span></figcaption>
+          </figure>
+
+          <!-- Card 3 -->
+          <figure>
+            <img src="photos_saison_01/carousel/03-cantal.jpeg" alt="Repos des guerriers — week-end Haut-Cantal" loading="lazy" onerror="this.style.display='none'">
+            <figcaption><span class="title">Repos des guerriers</span></figcaption>
+          </figure>
+
+          <!-- Card 4 -->
+          <figure>
+            <img src="photos_saison_01/carousel/04-cantal.jpeg" alt="La faim — week-end Haut-Cantal" loading="lazy" onerror="this.style.display='none'">
+            <figcaption><span class="title">La faim</span></figcaption>
+          </figure>
+
+          <!-- Card 5 -->
+          <figure>
+            <img src="photos_saison_01/carousel/05-hybride-seuil-vma.jpg" alt="L'esprit du Drift" loading="lazy" onerror="this.style.display='none'">
+            <figcaption><span class="title">L'esprit du Drift</span></figcaption>
+          </figure>
+
+          <!-- Card 6 -->
+          <figure>
+            <img src="photos_saison_01/carousel/06-semi-paris.jpg" alt="10K de Montmartre — finishers" loading="lazy" onerror="this.style.display='none'">
+            <figcaption><span class="title">10K de Montmartre — finishers</span></figcaption>
+          </figure>
+
+          <!-- Card 7 -->
+          <figure>
+            <img src="photos_saison_01/carousel/07-cycle-vma-piste.jpg" alt="Renfo collectif · piste" loading="lazy" onerror="this.style.display='none'">
+            <figcaption><span class="title">Renfo collectif · piste</span></figcaption>
+          </figure>
+
+          <!-- Card 8 -->
+          <figure>
+            <img src="photos_saison_01/carousel/08-cloture-cycle.jpg" alt="Saison bouclée" loading="lazy" onerror="this.style.display='none'">
+            <figcaption><span class="title">Saison bouclée</span></figcaption>
+          </figure>
+
+          <!-- Card 9 -->
+          <figure>
+            <img src="photos_saison_01/carousel/09-cantal.jpeg" alt="TEAM — week-end Haut-Cantal" loading="lazy" onerror="this.style.display='none'">
+            <figcaption><span class="title">TEAM</span></figcaption>
+          </figure>
+
+        </div><!-- /.album-carousel-track -->
+      </div><!-- /.album-carousel-track-wrap -->
+    </div><!-- /.album-section (carousel) -->
 
     <footer class="album-footer">
       <p>Le quotidien du club, c'est sur Instagram.</p>
