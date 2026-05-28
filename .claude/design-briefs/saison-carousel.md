@@ -1,7 +1,7 @@
 # Saison 01 carousel — design brief
 
 ## Intent
-We are adding a single horizontally-scrolling row of ten photo slots as the closing act of the Saison 01 album, placed between the mosaic section and the Instagram footer. The row should feel like a contact sheet being pulled from the archive — unhurried, slightly cinematic, a natural exhale after the denser mosaic above. Because the photos are not yet loaded, every slot must render as a visible, numbered placeholder that communicates "image incoming" rather than "something broke". The row earns its place by extending the editorial narrative without competing with the mosaic; it is deliberately lighter and more spacious in feel.
+**(v2 — corrected scope.)** We are converting the existing mosaic row of the Saison 01 album — the one titled **"La course mais pas que"** — from a static 4-up grid into a single horizontally-scrolling carousel. **The title stays exactly as it is today; we are NOT adding a new section or a new heading.** The row currently holds 4 real photos; those become the first 4 carousel cards (keeping their existing captions). After them come **5 additional drop-in slots** for photos that will be added later, for **9 cards total**. The row should feel like a contact sheet being pulled from the archive — unhurried, slightly cinematic. The 5 not-yet-loaded slots must render as visible, numbered placeholders that communicate "image incoming" rather than "something broke". (An earlier draft of this brief proposed a separate new section headed "Et tout le reste" — that approach is abandoned; the carousel IS the existing mosaic row, retitled to nothing — it keeps "La course mais pas que".)
 
 ## References
 - Ciele Athletics — https://cieleathletics.com/pages/ciele-athletics-pictures — tonal restraint in sports photo presentation; letting images carry the weight without decorative framing
@@ -16,7 +16,9 @@ We are adding a single horizontally-scrolling row of ten photo slots as the clos
 
 **Carousel proportions and rhythm.** Cards should be portrait-leaning — roughly the same aspect ratio as the hero photo, narrower than they are tall — so the strip has a film-contact-sheet quality. On a wide desktop viewport, approximately three and a half cards should be visible at once, meaning a clean slice of the fourth card peeks into view at the right edge to signal the row continues. The gap between cards should be tight but breathing — the same gap used between mosaic cells, not wider. The overall height of the row should sit noticeably shorter than the mosaic section above: the mosaic is the dense, editorial centrepiece; the carousel is the lighter coda. Visually the row should feel one step quieter and airier.
 
-**Section header.** The row should have its own section heading in the same style as "La course mais pas que" — uppercase, subdued, display-sub family at the same scale. Recommended heading: **"Et tout le reste"** — it positions this strip as the informal overflow of the season's archive, which is exactly right for a placeholder-heavy row that will fill in over time.
+**Section header.** Keep this section's heading and its current style, but change the text to **"La course mais pas que…"** — i.e. append a trailing ellipsis to the existing title. (The heading renders all-caps via CSS, so the only visible change is the added `…`.) Do NOT introduce "Et tout le reste" or any other new heading. The carousel replaces only the grid *layout* of this section, not its title or its place in the album.
+
+**The 4 existing photos.** The four photos currently in the mosaic become the first four carousel cards, in their current order, carrying their current captions unchanged. They are real images that load normally — they do NOT get a "Photo à venir" placeholder. Only the 5 new trailing slots are placeholders.
 
 **Caption treatment.** Reuse the mosaic's dark-gradient overlay caption exactly: a bottom-anchored gradient from transparent to a semi-opaque black, with the caption title in the uppercase sub family at the smaller of the two caption sizes used in the mosaic. Because cards are narrower than mosaic cells, captions should be kept to one short line; a title that wraps looks cramped at this card width.
 
@@ -24,13 +26,15 @@ We are adding a single horizontally-scrolling row of ten photo slots as the clos
 
 **Accessibility.** The scrollable region should carry an accessible label in French identifying it as the photo strip — something like "Galerie — moments de la saison". The container should declare a carousel role description so assistive technology announces it correctly rather than as a generic list. Each figure carries its alt text or slot-number as a text alternative when the image is absent.
 
-## Acceptance criteria
-- [ ] Ten numbered tiles render visibly without any images present; each shows its two-digit slot number and a "PHOTO À VENIR" label
-- [ ] The row appears after the mosaic section and before the Instagram footer, with consistent vertical spacing matching the gap above the mosaic
-- [ ] A section heading "Et tout le reste" appears above the row in the same typographic style as "La course mais pas que"
+## Acceptance criteria (v2)
+- [ ] The existing mosaic section is now a single horizontally-scrolling carousel; the separate "Et tout le reste" section is GONE
+- [ ] The section heading reads "La course mais pas que…" (existing title + trailing ellipsis), in its existing style — no new heading introduced
+- [ ] The carousel holds 9 cards: the 4 existing photos first (in current order, with their current captions, loading as real images — no placeholder behind them), followed by 5 numbered placeholder slots
+- [ ] The 5 placeholder slots render visibly without images present; each shows its two-digit slot number and a "Photo à venir" label
+- [ ] The row stays after the hero feature and before the Instagram footer, with consistent vertical spacing
 - [ ] On desktop, at least three full cards and a partial fourth are visible simultaneously without scrolling
 - [ ] Swiping or scrolling within the row moves through cards with snap-to-card behaviour; there are no arrow buttons or dot indicators
 - [ ] Placeholder tiles use the bone background tone with a graphite slot number — no harsh contrast, no white or blue fill
-- [ ] Caption overlay on a populated card matches the dark-gradient bottom-anchor treatment of the mosaic above
+- [ ] Caption overlay on every card matches the dark-gradient bottom-anchor treatment of the original mosaic
 - [ ] On a viewport below the medium breakpoint, each card occupies roughly three-quarters of viewport width with a clear peek of the next card
 - [ ] No horizontal scrollbar appears at the page level; only the carousel strip scrolls horizontally
