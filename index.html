@@ -1248,6 +1248,140 @@
   .album-footer a:hover { text-decoration: underline; }
 
   /* ============================================================
+     SAISON 01 — CAROUSEL (CSS-only, scroll-snap, zero JS)
+     ============================================================ */
+  .album-carousel-section { margin-top: 40px; }
+
+  /* Section heading — same style as .album-section-head h3 */
+  .album-carousel-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 14px;
+    flex-wrap: wrap;
+  }
+  .album-carousel-head h3 {
+    font-family: var(--font-sub);
+    text-transform: uppercase;
+    font-size: 28px;
+    font-weight: 400;
+    margin: 0;
+  }
+
+  /* Scroll container — fills the content column, clips the strip */
+  .album-carousel-track-wrap {
+    overflow: hidden;        /* no page-level overflow */
+    /* negative margin trick: pull edge-to-edge within the main padding */
+    margin-left: -24px;
+    margin-right: -24px;
+    padding-left: 24px;
+    padding-right: 24px;
+  }
+
+  /* The actual scrollable strip */
+  .album-carousel-track {
+    display: flex;
+    gap: 10px;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    padding-right: 24px; /* gives the last-card peek a comfortable landing */
+    /* Prevent the strip itself from contributing to page width */
+    width: 100%;
+  }
+  .album-carousel-track::-webkit-scrollbar { display: none; }
+
+  /* Each card — portrait, ~3.5 visible on desktop */
+  .album-carousel-track figure {
+    flex: 0 0 calc((100% - 3 * 10px) / 3.5);
+    margin: 0;
+    position: relative;
+    border-radius: 6px;
+    overflow: hidden;
+    scroll-snap-align: start;
+    /* Bone base for placeholder state */
+    background: var(--bone);
+    aspect-ratio: 3 / 4;
+    /* Shorter than mosaic — lighter feel */
+    max-height: 320px;
+  }
+
+  /* Real photo sits on top; when it errors it hides revealing placeholder */
+  .album-carousel-track figure img {
+    position: absolute;
+    inset: 0;
+    width: 100%; height: 100%;
+    object-fit: cover;
+    display: block;
+    z-index: 2;
+  }
+
+  /* Placeholder tile — behind img, always rendered */
+  .carousel-placeholder {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    /* Subtle diagonal stripe texture echoing the site grid motif */
+    background:
+      repeating-linear-gradient(
+        -45deg,
+        transparent 0 8px,
+        rgba(91,91,91,0.07) 8px 9px
+      ),
+      var(--bone);
+    user-select: none;
+    pointer-events: none;
+  }
+  .carousel-placeholder-num {
+    font-family: var(--font-mono);
+    font-size: 36px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--graphite);
+    line-height: 1;
+    opacity: 0.55;
+  }
+  .carousel-placeholder-label {
+    font-family: var(--font-mono);
+    font-size: 9px;
+    text-transform: uppercase;
+    letter-spacing: 0.18em;
+    color: var(--graphite);
+    opacity: 0.45;
+  }
+
+  /* Caption — reuses mosaic dark-gradient bottom-anchor treatment */
+  .album-carousel-track figcaption {
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    padding: 8px 10px;
+    background: linear-gradient(180deg, transparent, rgba(0,0,0,0.4));
+    color: var(--white);
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    z-index: 3;
+  }
+  .album-carousel-track figcaption .title {
+    font-family: var(--font-sub);
+    text-transform: uppercase;
+    font-size: 12px;
+    letter-spacing: 0.04em;
+    opacity: 0.9;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  /* ============================================================
      V2 — RESPONSIVE
      ============================================================ */
   @media (max-width: 900px) {
@@ -1260,6 +1394,9 @@
     .album-hero { grid-template-columns: 1fr; }
     .album-mosaic { grid-template-columns: 1fr 1fr; }
     .album-mosaic figure { height: 200px; }
+    /* Carousel at medium breakpoint: ~3/4 viewport width each card */
+    .album-carousel-track-wrap { margin-left: -20px; margin-right: -20px; padding-left: 20px; padding-right: 20px; }
+    .album-carousel-track figure { flex: 0 0 75vw; max-height: 280px; }
   }
   @media (max-width: 600px) {
     header { padding: 10px 16px; gap: 10px; }
@@ -1331,6 +1468,9 @@
 
     .album-mosaic { grid-template-columns: 1fr; }
     .album-mosaic figure { height: 220px; }
+    /* Carousel at small breakpoint: ~80% viewport width each card */
+    .album-carousel-track-wrap { margin-left: -16px; margin-right: -16px; padding-left: 16px; padding-right: 16px; }
+    .album-carousel-track figure { flex: 0 0 80vw; max-height: 260px; }
 
     .resource-viewer { height: 60vh; min-height: 360px; }
     .resource-head { flex-wrap: wrap; }
@@ -1702,6 +1842,135 @@
         </figure>
       </div>
     </div>
+
+    <!-- =====================================================
+         SAISON 01 — CAROUSEL
+         10 portrait slots, CSS scroll-snap only, zero JS.
+
+         HOW TO ADD A PHOTO
+           Drop carousel-NN.jpg (e.g. carousel-03.jpg) into
+           photos_saison_01/carousel/. That slot auto-fills and
+           covers its placeholder — no markup change needed.
+
+         HOW TO EDIT A CAPTION
+           Find the matching <figure> below (slot 01–10) and
+           change the text inside its <figcaption>.
+    ====================================================== -->
+    <div class="album-carousel-section">
+      <div class="album-carousel-head">
+        <h3>Et tout le reste</h3>
+      </div>
+      <div class="album-carousel-track-wrap">
+        <div
+          class="album-carousel-track"
+          role="region"
+          aria-label="Galerie — moments de la saison"
+          aria-roledescription="carrousel"
+        >
+
+          <!-- Slot 01 -->
+          <figure>
+            <div class="carousel-placeholder" aria-hidden="true">
+              <span class="carousel-placeholder-num">01</span>
+              <span class="carousel-placeholder-label">Photo à venir</span>
+            </div>
+            <img src="photos_saison_01/carousel/carousel-01.jpg" alt="Photo 01 — saison 01" loading="lazy" onerror="this.style.display='none'">
+            <figcaption><span class="title">Moment de saison</span></figcaption>
+          </figure>
+
+          <!-- Slot 02 -->
+          <figure>
+            <div class="carousel-placeholder" aria-hidden="true">
+              <span class="carousel-placeholder-num">02</span>
+              <span class="carousel-placeholder-label">Photo à venir</span>
+            </div>
+            <img src="photos_saison_01/carousel/carousel-02.jpg" alt="Photo 02 — saison 01" loading="lazy" onerror="this.style.display='none'">
+            <figcaption><span class="title">Moment de saison</span></figcaption>
+          </figure>
+
+          <!-- Slot 03 -->
+          <figure>
+            <div class="carousel-placeholder" aria-hidden="true">
+              <span class="carousel-placeholder-num">03</span>
+              <span class="carousel-placeholder-label">Photo à venir</span>
+            </div>
+            <img src="photos_saison_01/carousel/carousel-03.jpg" alt="Photo 03 — saison 01" loading="lazy" onerror="this.style.display='none'">
+            <figcaption><span class="title">Moment de saison</span></figcaption>
+          </figure>
+
+          <!-- Slot 04 -->
+          <figure>
+            <div class="carousel-placeholder" aria-hidden="true">
+              <span class="carousel-placeholder-num">04</span>
+              <span class="carousel-placeholder-label">Photo à venir</span>
+            </div>
+            <img src="photos_saison_01/carousel/carousel-04.jpg" alt="Photo 04 — saison 01" loading="lazy" onerror="this.style.display='none'">
+            <figcaption><span class="title">Moment de saison</span></figcaption>
+          </figure>
+
+          <!-- Slot 05 -->
+          <figure>
+            <div class="carousel-placeholder" aria-hidden="true">
+              <span class="carousel-placeholder-num">05</span>
+              <span class="carousel-placeholder-label">Photo à venir</span>
+            </div>
+            <img src="photos_saison_01/carousel/carousel-05.jpg" alt="Photo 05 — saison 01" loading="lazy" onerror="this.style.display='none'">
+            <figcaption><span class="title">Moment de saison</span></figcaption>
+          </figure>
+
+          <!-- Slot 06 -->
+          <figure>
+            <div class="carousel-placeholder" aria-hidden="true">
+              <span class="carousel-placeholder-num">06</span>
+              <span class="carousel-placeholder-label">Photo à venir</span>
+            </div>
+            <img src="photos_saison_01/carousel/carousel-06.jpg" alt="Photo 06 — saison 01" loading="lazy" onerror="this.style.display='none'">
+            <figcaption><span class="title">Moment de saison</span></figcaption>
+          </figure>
+
+          <!-- Slot 07 -->
+          <figure>
+            <div class="carousel-placeholder" aria-hidden="true">
+              <span class="carousel-placeholder-num">07</span>
+              <span class="carousel-placeholder-label">Photo à venir</span>
+            </div>
+            <img src="photos_saison_01/carousel/carousel-07.jpg" alt="Photo 07 — saison 01" loading="lazy" onerror="this.style.display='none'">
+            <figcaption><span class="title">Moment de saison</span></figcaption>
+          </figure>
+
+          <!-- Slot 08 -->
+          <figure>
+            <div class="carousel-placeholder" aria-hidden="true">
+              <span class="carousel-placeholder-num">08</span>
+              <span class="carousel-placeholder-label">Photo à venir</span>
+            </div>
+            <img src="photos_saison_01/carousel/carousel-08.jpg" alt="Photo 08 — saison 01" loading="lazy" onerror="this.style.display='none'">
+            <figcaption><span class="title">Moment de saison</span></figcaption>
+          </figure>
+
+          <!-- Slot 09 -->
+          <figure>
+            <div class="carousel-placeholder" aria-hidden="true">
+              <span class="carousel-placeholder-num">09</span>
+              <span class="carousel-placeholder-label">Photo à venir</span>
+            </div>
+            <img src="photos_saison_01/carousel/carousel-09.jpg" alt="Photo 09 — saison 01" loading="lazy" onerror="this.style.display='none'">
+            <figcaption><span class="title">Moment de saison</span></figcaption>
+          </figure>
+
+          <!-- Slot 10 -->
+          <figure>
+            <div class="carousel-placeholder" aria-hidden="true">
+              <span class="carousel-placeholder-num">10</span>
+              <span class="carousel-placeholder-label">Photo à venir</span>
+            </div>
+            <img src="photos_saison_01/carousel/carousel-10.jpg" alt="Photo 10 — saison 01" loading="lazy" onerror="this.style.display='none'">
+            <figcaption><span class="title">Moment de saison</span></figcaption>
+          </figure>
+
+        </div><!-- /.album-carousel-track -->
+      </div><!-- /.album-carousel-track-wrap -->
+    </div><!-- /.album-carousel-section -->
 
     <footer class="album-footer">
       <p>Le quotidien du club, c'est sur Instagram.</p>
