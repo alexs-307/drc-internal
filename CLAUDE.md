@@ -69,6 +69,10 @@ When asked to scope a large change, produce a report with these sections:
 
 ## Tech stack & architecture
 
+> For the full end-to-end picture — how the website, GitHub Pages, the `derapage.xyz` domain
+> (OVH), DNS, Supabase, and Resend fit together and *why* each was chosen — see **`STACK.md`**.
+> The notes below are the operational summary; `STACK.md` is the explainer.
+
 - **`index.html`** — all CSS, JS, and the base64-encoded logo are inline. No build step, no framework. External dependencies: Google Fonts (Inter, CDN) and the Supabase JS SDK (CDN ESM import).
 - **Vanilla JS only** — no React, no Alpine, no jQuery.
 - **Backend — Supabase (Postgres + Auth + Storage), live.** `index.html` fetches `sessions`, `races` and `resources` from Supabase tables at runtime (`window.supabase.from('…')`) using the publishable key, and uses Supabase Auth (magic-link sign-in). The old static data files are retired: there is **no `sessions.json` in this repo anymore**, and `races[]` / resource cards are no longer hardcoded in the HTML. Schema + migrations live under `supabase/migrations/`. VMA stays in `localStorage` (intentionally not in the DB). See *Secrets & Supabase keys* below.
