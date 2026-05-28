@@ -1814,7 +1814,7 @@
         </div>
         <button class="auth-btn-primary" id="auth-submit-btn" type="button">Recevoir le lien</button>
         <p class="auth-error" id="auth-signin-error"></p>
-        <p class="auth-help">Pas encore membre ? Contacte Alexandre (sports director) pour rejoindre le club.</p>
+        <p class="auth-help">Pas encore membre ? Contacte Alexandre pour rejoindre le club.</p>
       </div>
 
       <!-- STATE: awaiting email confirmation -->
@@ -1886,6 +1886,8 @@
   function setAuthUIState(authenticated) {
     document.body.classList.remove('is-loading', 'is-authenticated', 'is-anonymous');
     document.body.classList.add(authenticated ? 'is-authenticated' : 'is-anonymous');
+    const compteLabel = document.querySelector('.tab-btn[data-tab="compte"] span');
+    if (compteLabel) compteLabel.textContent = authenticated ? 'Compte' : 'Connexion';
     if (!authenticated) {
       // Anonymous default tab: Saison 01, not Calendrier.
       // activateTab() lives in the classic (non-module) script and may not yet
