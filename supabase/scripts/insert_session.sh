@@ -10,7 +10,7 @@
 #             or 2 (usage / validation error).
 #
 # Required env var:
-#   SUPABASE_SECRET_KEY   — service-role key; lives in ~/.config/drc/.env (mode 600)
+#   SUPABASE_SECRET_KEY   — service-role key; lives in .env at the drc-internal/ repo root (mode 600)
 #
 # Dependencies: curl (ships with macOS), jq (brew install jq)
 
@@ -21,7 +21,7 @@ set -euo pipefail
 # ---------------------------------------------------------------------------
 if [[ -z "${SUPABASE_SECRET_KEY:-}" ]]; then
   echo "error: SUPABASE_SECRET_KEY is not set." >&2
-  echo "       Source ~/.config/drc/.env before running this script." >&2
+  echo "       Source .env (at the drc-internal/ repo root) before running this script." >&2
   exit 2
 fi
 
@@ -120,7 +120,7 @@ if echo "$RESPONSE" | jq -e 'type == "object" and has("code")' > /dev/null 2>&1;
 fi
 
 # Expect a JSON array with at least one row containing an id (UUID).
-if ! echo "$RESPONSE" | jq -e 'type == "array" and length > 0 and .[0] | has("id")' > /dev/null 2>&1; then
+if ! echo "$RESPONSE" | jq -e 'type == "array" and length > 0 and (.[0] | has("id"))' > /dev/null 2>&1; then
   echo "error: unexpected response shape for session date=${INPUT_DATE}." >&2
   echo "       Response: $(echo "$RESPONSE" | jq -c . 2>/dev/null || echo "$RESPONSE")" >&2
   exit 1
