@@ -1760,15 +1760,14 @@
 
     <!-- =====================================================
          SAISON 01 — CAROUSEL
-         9 portrait cards: 4 real photos + 5 drop-in slots.
-         CSS scroll-snap only, zero JS.
+         9 portrait cards, all real photos. CSS scroll-snap only, zero JS.
 
-         HOW TO ADD A PHOTO (drop-in slots: carousel-01 … carousel-05)
-           Drop carousel-NN.jpg (e.g. carousel-03.jpg) into
-           photos_saison_01/carousel/. That slot auto-fills and
-           covers its numbered placeholder — no markup change needed.
-           Slots 01–05 are the trailing positions after the 4 existing
-           real photos (cards 1–4 are hardcoded images, not drop-ins).
+         The photos live in photos_saison_01/carousel/ with filenames
+         01-… through 09-…, and are displayed in numeric filename order.
+
+         HOW TO ADD / REPLACE A PHOTO
+           Drop the file into photos_saison_01/carousel/, then update the
+           matching <figure> below: its <img src> and its <figcaption>.
 
          HOW TO EDIT A CAPTION
            Find the matching <figure> below and change the text
@@ -1786,78 +1785,58 @@
           aria-roledescription="carrousel"
         >
 
-          <!-- Card 1 — real photo -->
+          <!-- Card 1 -->
           <figure>
-            <img src="photos_saison_01/05-hybride-seuil-vma.jpg" alt="L'esprit du Drift" loading="lazy" onerror="this.style.display='none'">
+            <img src="photos_saison_01/carousel/01-cantal.jpeg" alt="Dîner pre-disco party — week-end Haut-Cantal" loading="lazy" onerror="this.style.display='none'">
+            <figcaption><span class="title">Dîner pre-disco party</span></figcaption>
+          </figure>
+
+          <!-- Card 2 -->
+          <figure>
+            <img src="photos_saison_01/carousel/02-cantal.jpeg" alt="En route pour le Haut-Cantal" loading="lazy" onerror="this.style.display='none'">
+            <figcaption><span class="title">En route pour le Haut-Cantal</span></figcaption>
+          </figure>
+
+          <!-- Card 3 -->
+          <figure>
+            <img src="photos_saison_01/carousel/03-cantal.jpeg" alt="Repos des guerriers — week-end Haut-Cantal" loading="lazy" onerror="this.style.display='none'">
+            <figcaption><span class="title">Repos des guerriers</span></figcaption>
+          </figure>
+
+          <!-- Card 4 -->
+          <figure>
+            <img src="photos_saison_01/carousel/04-cantal.jpeg" alt="La faim — week-end Haut-Cantal" loading="lazy" onerror="this.style.display='none'">
+            <figcaption><span class="title">La faim</span></figcaption>
+          </figure>
+
+          <!-- Card 5 -->
+          <figure>
+            <img src="photos_saison_01/carousel/05-hybride-seuil-vma.jpg" alt="L'esprit du Drift" loading="lazy" onerror="this.style.display='none'">
             <figcaption><span class="title">L'esprit du Drift</span></figcaption>
           </figure>
 
-          <!-- Card 2 — real photo -->
+          <!-- Card 6 -->
           <figure>
-            <img src="photos_saison_01/06-semi-paris.jpg" alt="10K de Montmartre — finishers" loading="lazy" onerror="this.style.display='none'">
+            <img src="photos_saison_01/carousel/06-semi-paris.jpg" alt="10K de Montmartre — finishers" loading="lazy" onerror="this.style.display='none'">
             <figcaption><span class="title">10K de Montmartre — finishers</span></figcaption>
           </figure>
 
-          <!-- Card 3 — real photo -->
+          <!-- Card 7 -->
           <figure>
-            <img src="photos_saison_01/07-cycle-vma-piste.jpg" alt="Renfo collectif · piste" loading="lazy" onerror="this.style.display='none'">
+            <img src="photos_saison_01/carousel/07-cycle-vma-piste.jpg" alt="Renfo collectif · piste" loading="lazy" onerror="this.style.display='none'">
             <figcaption><span class="title">Renfo collectif · piste</span></figcaption>
           </figure>
 
-          <!-- Card 4 — real photo -->
+          <!-- Card 8 -->
           <figure>
-            <img src="photos_saison_01/08-cloture-cycle.jpg" alt="Saison bouclée" loading="lazy" onerror="this.style.display='none'">
+            <img src="photos_saison_01/carousel/08-cloture-cycle.jpg" alt="Saison bouclée" loading="lazy" onerror="this.style.display='none'">
             <figcaption><span class="title">Saison bouclée</span></figcaption>
           </figure>
 
-          <!-- Drop-in slot 01 -->
+          <!-- Card 9 -->
           <figure>
-            <div class="carousel-placeholder" aria-hidden="true">
-              <span class="carousel-placeholder-num">01</span>
-              <span class="carousel-placeholder-label">Photo à venir</span>
-            </div>
-            <img src="photos_saison_01/carousel/carousel-01.jpg" alt="Photo 01 — saison 01" loading="lazy" onerror="this.style.display='none'">
-            <figcaption><span class="title">Moment de saison</span></figcaption>
-          </figure>
-
-          <!-- Drop-in slot 02 -->
-          <figure>
-            <div class="carousel-placeholder" aria-hidden="true">
-              <span class="carousel-placeholder-num">02</span>
-              <span class="carousel-placeholder-label">Photo à venir</span>
-            </div>
-            <img src="photos_saison_01/carousel/carousel-02.jpg" alt="Photo 02 — saison 01" loading="lazy" onerror="this.style.display='none'">
-            <figcaption><span class="title">Moment de saison</span></figcaption>
-          </figure>
-
-          <!-- Drop-in slot 03 -->
-          <figure>
-            <div class="carousel-placeholder" aria-hidden="true">
-              <span class="carousel-placeholder-num">03</span>
-              <span class="carousel-placeholder-label">Photo à venir</span>
-            </div>
-            <img src="photos_saison_01/carousel/carousel-03.jpg" alt="Photo 03 — saison 01" loading="lazy" onerror="this.style.display='none'">
-            <figcaption><span class="title">Moment de saison</span></figcaption>
-          </figure>
-
-          <!-- Drop-in slot 04 -->
-          <figure>
-            <div class="carousel-placeholder" aria-hidden="true">
-              <span class="carousel-placeholder-num">04</span>
-              <span class="carousel-placeholder-label">Photo à venir</span>
-            </div>
-            <img src="photos_saison_01/carousel/carousel-04.jpg" alt="Photo 04 — saison 01" loading="lazy" onerror="this.style.display='none'">
-            <figcaption><span class="title">Moment de saison</span></figcaption>
-          </figure>
-
-          <!-- Drop-in slot 05 -->
-          <figure>
-            <div class="carousel-placeholder" aria-hidden="true">
-              <span class="carousel-placeholder-num">05</span>
-              <span class="carousel-placeholder-label">Photo à venir</span>
-            </div>
-            <img src="photos_saison_01/carousel/carousel-05.jpg" alt="Photo 05 — saison 01" loading="lazy" onerror="this.style.display='none'">
-            <figcaption><span class="title">Moment de saison</span></figcaption>
+            <img src="photos_saison_01/carousel/09-cantal.jpeg" alt="TEAM — week-end Haut-Cantal" loading="lazy" onerror="this.style.display='none'">
+            <figcaption><span class="title">TEAM</span></figcaption>
           </figure>
 
         </div><!-- /.album-carousel-track -->

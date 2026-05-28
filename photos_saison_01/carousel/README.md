@@ -1,26 +1,23 @@
 # Saison 01 — carousel photos
 
-## How to add a photo
+## How it works
 
-The carousel has 9 cards total: the first 4 are existing real photos hardcoded
-in `index.html` (not drop-ins). The remaining 5 are drop-in slots mapped to
-fixed filenames:
+The carousel shows 9 real portrait photos, all living in this folder, named
+`01-…` through `09-…`. They are displayed in numeric filename order. Each photo
+is explicitly referenced by its exact filename from a `<figure>` in `index.html`
+— there are no auto-filled drop-in slots.
 
-    carousel-01.jpg
-    carousel-02.jpg
-    carousel-03.jpg
-    carousel-04.jpg
-    carousel-05.jpg
+## How to add or replace a photo
 
-Drop the correctly named file into this folder. When a file with the right name
-exists, it auto-fills that slot and covers the numbered placeholder tile — no
-markup change needed.
+Drop the file into this folder, then update the matching `<figure>` in
+`index.html`: change its `<img src>` to the new filename and its `<figcaption>`.
+Search for the carousel block (look for the comment `SAISON 01 — CAROUSEL`) to
+find the cards.
 
 ## How to edit a caption
 
-Each slot's caption is hardcoded inline in `index.html`. Search for the carousel
-block (look for the comment `SAISON 01 — CAROUSEL`) and change the `<figcaption>`
-text for the matching card.
+Each card's caption is hardcoded inline in `index.html`. Find the matching
+`<figure>` in the carousel block and change its `<figcaption>` text.
 
 ## Recommended image spec
 
