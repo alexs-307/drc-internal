@@ -435,6 +435,17 @@
   .vma-hint.timed {
     background: #D97706;
   }
+  .vma-splits {
+    display: block;
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    color: var(--graphite);
+    margin-top: 2px;
+    padding-left: 1em;
+    white-space: pre-wrap;
+    line-height: 1.6;
+    letter-spacing: 0.01em;
+  }
 
   /* ===== TAB 3 — SÉANCES ===== */
   .search-bar {
@@ -2361,9 +2372,10 @@ function renderSessions(list) {
     const item = document.createElement('div');
     item.className = 'session-item';
 
-    const g12ann = annotateVMA(s.g12, vma);
-    const g3ann  = s.g3 ? annotateVMA(s.g3, vma) : null;
-    const sugang = s.suggestion ? annotateVMA(s.suggestion, vma) : null;
+    const trackLengthM = VENUE_TRACK_LENGTHS[s.venue] || null;
+    const g12ann = annotateVMA(s.g12, vma, trackLengthM);
+    const g3ann  = s.g3 ? annotateVMA(s.g3, vma, trackLengthM) : null;
+    const sugang = s.suggestion ? annotateVMA(s.suggestion, vma, trackLengthM) : null;
 
     const g3Html = g3ann ? `
       <div class="session-block">
@@ -2743,7 +2755,15 @@ function formatPace(kmh) {
   return formatSecs(3600 / kmh);
 }
 
-function annotateVMA(text, vma) {
+// Venue → lap length in metres. Venues absent from this map (e.g. off-track outdoor
+// sessions at Métro Château de Vincennes) produce no splits — correct behavior.
+const VENUE_TRACK_LENGTHS = {
+  'Bertrand Dauvin': 300,
+  'Max Roussie': 400,
+  'Stade des Poissonniers': 400,
+};
+
+function annotateVMA(text, vma, trackLengthM) {
   if (!vma || vma <= 0) return text;
 
   // Pattern 1 — distance: "400m à 100% VMA" or "400 m à 100-110% VMA"
@@ -2753,12 +2773,28 @@ function annotateVMA(text, vma) {
       const pct = pct2 ? (parseInt(pct1) + parseInt(pct2)) / 2 : parseInt(pct1);
       const speedMs = vma * pct / 100 / 3.6; // m/s
       const secs = parseInt(dist) / speedMs;
-      return `${match}<span class="vma-hint">${formatSecs(secs)}</span>`;
+      let result = `${match}<span class="vma-hint">${formatSecs(secs)}</span>`;
+
+      // Emit intermediate split landmarks when the rep is longer than one lap
+      if (trackLengthM && parseInt(dist) > trackLengthM) {
+        const repDist = parseInt(dist);
+        const lapCount = Math.floor((repDist - 1) / trackLengthM);
+        const pairs = [];
+        for (let i = 1; i <= lapCount; i++) {
+          const landmarkM = i * trackLengthM;
+          const landmarkSecs = landmarkM / speedMs;
+          pairs.push(`${landmarkM}m ${formatSecs(landmarkSecs)}`);
+        }
+        result += `<span class="vma-splits">${pairs.join('  ')}</span>`;
+      }
+
+      return result;
     }
   );
 
   // Pattern 2 — timed block: "6'" or "4'" before "% VMA" or "allure X% VMA" or "à X% VMA"
   // Matches: "3' à 90% VMA", "6' allure 90% VMA", "8' de 30/30" — only when followed by %
+  // No splits for timed blocks — the distance is unknown per-lap.
   text = text.replace(
     /(\d+)'\s*(?:à|allure)\s*(\d+)(?:\s*[-–]\s*(\d+))?\s*%\s*VMA/g,
     (match, mins, pct1, pct2) => {
