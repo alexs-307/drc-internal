@@ -1976,7 +1976,7 @@
       <div id="auth-state-signedin" class="auth-state" style="display:none;">
         <h1 class="page-title">
           <span class="line-1" id="auth-member-name"></span>
-          <span class="line-2">Paré à drifter ?</span>
+          <span class="line-2">On drifte ?</span>
         </h1>
         <p class="page-sub auth-member-email-line" id="auth-member-email"></p>
         <button class="auth-btn-secondary" id="auth-signout-btn" type="button">Se déconnecter</button>
@@ -2717,8 +2717,8 @@ function showSignedInState(firstName, email) {
   const displayName = firstName ? firstName : 'MEMBRE';
   if (nameEl)  nameEl.textContent  = displayName;
   if (emailEl) emailEl.textContent = email || '';
-  // Tagline is constant ("Paré à drifter ?"), already in the HTML.
-  showAuthState('auth-state-signedin', `${displayName}. Paré à drifter ?`);
+  // Tagline is constant ("On drifte ?"), already in the HTML.
+  showAuthState('auth-state-signedin', `${displayName}. On drifte ?`);
 }
 
 // initAuth() is now called directly from the module script at the bottom of the
