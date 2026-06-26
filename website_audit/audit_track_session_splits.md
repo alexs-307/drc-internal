@@ -9,6 +9,26 @@
 
 ---
 
+## v3 revision note (supersedes v2 where they conflict)
+
+v2 shipped and was tested locally. Two visual problems came back:
+
+1. **Toggle affordance** — the bare-text stopwatch + "Temps de passage" label looked decorative; users skipped over it without realising it was clickable.
+2. **Vertical waste** — the per-landmark stacked rows (300m / 600m / 900m on three separate lines, both desktop table and mobile stack) consumed too much vertical space for what is essentially three short data points.
+
+v3 (see design brief v3) keeps every data-shape decision below unchanged. The two display changes:
+
+- The toggle becomes a **persistent low-profile bordered chip** (border in the existing border tone at rest, blue when the panel is open). Icon-blue-shift still happens too. No chevron, no fill change.
+- The disclosed panel's landmark layout collapses to a **single inline horizontal row per rep group**, with a **centred dot (`·`) separator** between distance-time pairs. The rep-group label (`1000M À 90% VMA`) stays on its own line above the row. The desktop-table / mobile-stack split from v2 is **eliminated** — one layout serves all viewports, wrapping between pairs (never inside a pair) when the screen is narrow.
+
+**Implementation deltas vs v2:**
+- Restyle `.splits-toggle` from bare-text to bordered chip; add a `border-color` state on `.splits-toggle.active`.
+- Replace the `<table class="splits-table">` + `.splits-table-mobile` stack with a single inline element per rep group (e.g. flexbox row with `flex-wrap: wrap`, each pair non-breaking, dot rendered as a separate inline element between pairs).
+- Drop the `@media (max-width: 700px)` table/stacked-row split — the new layout is responsive on its own.
+- All other v2 plumbing (`extractPassageData`, `toggleSplits`, `stopPropagation`, suppression rules, `(estimé)` tag, soft max-height unfurl) stays untouched.
+
+---
+
 ## v2 revision note (supersedes the v1 inline model below where they conflict)
 
 The v1 plan — inject split badges inline into the annotated session text via an extended

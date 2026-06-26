@@ -1,57 +1,45 @@
-# Track session intermediate splits — design brief (v2)
+# Track session intermediate splits — design brief (v3)
 
-> v1 (always-on inline split rows) was rejected: the permanently visible split data
-> fragmented the description and made sessions harder to read. v2 adopts on-demand
-> disclosure. The inline `.vma-splits` treatment is abandoned entirely.
+> **Version history**
+> v1 (always-on inline split rows) — rejected: fragmented the session description, hurt readability.
+> v2 (toggle + stacked two-column table) — rejected: toggle read as decoration, not a control; vertical table wasted too much space for a simple list of three landmarks.
+> v3 (this revision) — persistent chip affordance on the toggle; inline horizontal landmark row with centre-dot separator.
 
 ## Intent
 
-Each session card gains a single, unobtrusive toggle that reveals a "Temps de passage"
-panel on demand. By default the session description reads exactly as it does today —
-clean mono text with the existing blue and amber badges. A member who wants lap checkpoints
-taps the toggle; everyone else never sees the data. The panel is a reference table, not
-a badge swarm — it should feel like flipping to the back of a training booklet.
+Two targeted fixes to the v2 implementation. The toggle must register immediately as something you can click — it currently looks like a secondary label and users skip over it. The passage data panel itself must collapse each rep group's landmarks into a single compact horizontal line rather than one table row per landmark — on a 300m track a 1000m rep produces three checkpoints; showing them as three stacked rows is disproportionate to the information density.
 
 ## References
 
-- **Strava Workout Analysis (lap breakdown)** — https://communityhub.strava.com/insider-journal-9/running-workout-analysis-guide-1491 — borrow the two-column pattern of landmark label and time side-by-side in a muted secondary register, subordinate to the main activity headline
-- **Tracksmith brand typography** — https://fontsinuse.com/uses/43122/tracksmith — borrow the discipline of keeping secondary reference data in a smaller, quieter weight so the headline effort reads first; size and weight differential carries hierarchy without additional color
-- **Bootstrap Icons: Stopwatch** — https://icons.getbootstrap.com/icons/stopwatch/ — the stopwatch glyph; compact, universally legible, zero cultural noise for a French running club
-- **Headless UI Disclosure pattern** — https://headlessui.com/react/disclosure — borrow the single-button open/close mental model: one control, one panel, no ambiguity about what expands
-- **NYRR Training Plans** — https://www.nyrr.org/train/runner-resources-hub/training-plans/training-plans — borrow the coach-printout convention of tight two-column pace reference tables that sit outside the workout narrative proper
+- **W3C ARIA Disclosure Pattern** — https://www.w3.org/WAI/ARIA/apg/patterns/disclosure/ — borrow the principle that a disclosure trigger needs a persistent visual affordance (not just a hover state) so users can identify it as interactive before they move the cursor near it
+- **Tracksmith Training Journal** — https://www.tracksmith.com/products/hare-ac-training-journal — borrow the coach-printout convention of tight, condensed reference data arranged horizontally on a single line, with small typographic glyphs separating entries — the reference material feels authored, not auto-generated
+- **Headless UI Disclosure** — https://headlessui.com/react/disclosure — the single-button open/close mental model stays; what changes is the resting visual state of the button itself
+- **Linear design system** — https://linear.app/now/how-we-redesigned-the-linear-ui — borrow the treatment of small secondary actions as quiet bordered chips rather than bare text; the border gives "I am a thing you can press" without heavy colour
+- **NYRR Training Plans** — https://www.nyrr.org/train/runner-resources-hub/training-plans/training-plans — borrow the inline breadcrumb-style pace notation where checkpoints read left-to-right as a sequence, not a column
 
 ## Visual direction
 
-**The toggle control.** Three candidates:
+**Color:** No new tokens. All changes use the existing palette — the existing border tone for the chip outline, the existing muted graphite for the label and landmark text, the existing blue surfacing only on the icon when the panel is open, the existing peach or blue-faint background for the chip's resting pill fill only if a light fill is needed (leave it at transparent first; add the faintest blue-faint wash only if the border alone is insufficient).
 
-1. A stopwatch/chronometer glyph (Unicode or inline SVG) paired with the label "Temps de passage". Communicates "timing data lives here" without any explanation. Fits the club's restrained tone because it is a tool glyph, not a decorative icon.
-2. A flag or lap-marker glyph alongside "Temps de passage". Communicates "checkpoint" well for track runners, though it skews slightly more playful than the site's current register.
-3. A bare downward chevron with the label "Temps de passage". Maximally minimal but risks looking identical to the parent accordion's own chevron, which would confuse the two levels.
+**Type:** The toggle label and landmark pairs both remain in the existing monospaced family at the existing smaller size from v2. The rep-group label (e.g. "1000M À 90% VMA") keeps its all-caps, slightly tracked treatment on its own line above the landmarks — do not fold it into the landmark row.
 
-**Recommend the stopwatch glyph (candidate 1)** paired with the short French label "Temps de passage". The glyph earns the label; the label earns the glyph. Together they leave no ambiguity about the data type. Place the control flush to the bottom-right of the session content block — after the last line of the description, right-aligned — so it never interrupts reading. In its resting state the control uses the existing muted secondary text tone: present but quiet. When the panel is open, the stopwatch glyph picks up the site's blue — the same blue used for the rep-total badges — signalling "this is active." The label text does not change; only the icon color shifts. No chevron rotation on this control; it would mimic the parent accordion too closely.
+**Layout and spacing:** For the landmark row, each distance-time pair sits inline, reading left to right with a small centred dot — a middle dot, not a dash, not a bullet — as the separator between pairs. The dot sits at mid-height between baseline and cap-height, visually equidistant from the pair on each side. Within a pair the distance and time sit very close together with a hair of space, no separator — "300m 1'15"" reads as one unit. On screens too narrow to fit all pairs, the row wraps; when it wraps, each pair stays together on its line (the wrap happens between pairs at the dot, not inside a pair). The dot separator wraps with the following pair rather than orphaning at the end of a line.
 
-**The disclosed panel.** The panel sits directly below the session content block, separated from it by a thin hairline in the existing border tone — the same quiet rule used elsewhere to divide sections. Inside the panel, reps are grouped individually: each qualifying rep gets a small, all-caps label in the muted graphite tone (e.g. "1000M À 90% VMA") followed immediately by its passage row. The passage row is a compact two-column table: the left column holds the landmark distance (e.g. "300m", "600m", "900m") and the right column holds the target time. Both columns use the monospaced family already used for session content, at a size one step smaller than the main session text. The landmark distances are right-aligned within their column; the times are left-aligned in theirs — this mirrors the "label : value" cadence familiar from a splits sheet. Multiple reps stack vertically with a modest gap between them, enough to tell them apart without heavy dividers.
+**Toggle affordance:** Replace the current bare-text button with a persistent low-profile chip. The chip has a thin border in the existing border tone — the same hairline weight used elsewhere in the site for card outlines and dividers — and a very slight horizontal padding so the stopwatch glyph and label have breathing room inside the pill shape. The border is always visible at rest, not just on hover. In its resting state the chip uses the same muted graphite as today. On hover, the border shifts one step darker toward the primary text tone and the label sharpens slightly. When the panel is open, the stopwatch glyph turns blue (same as v2) and the chip border takes on the same blue, creating a paired open/closed signal: closed is a quiet grey chip, open is a blue-outlined chip with a blue icon. No fill change in either state — background stays transparent so the chip never feels like a heavy button. No chevron, no animated rotation — the chip border-color shift from grey to blue is the state indicator.
 
-Timed blocks (e.g. "3' à 90% VMA") are treated identically in structure but their rep label should carry a brief parenthetical clarifier — something like "estimé" — to signal these are pace-derived estimates, not fixed checkpoints. No extra color or badge; the word alone is enough. Both columns keep the same layout.
-
-**Color and type.** The panel background uses the existing off-white site background rather than white, so it reads as a slightly recessed reference layer beneath the white card surface. The landmark labels and time values inherit the existing graphite secondary tone — quieter than the blue and amber badges but not invisible. Nothing in the panel introduces a new color. The existing blue surfaces only on the active toggle icon.
-
-**Motion.** The parent card accordion expands with no animation (display:none toggled to display:block). The passage-time panel should use a soft max-height transition — a gentle vertical unfurl, slightly slower than an instant snap but not theatrical. This keeps the two levels distinct: the parent card snaps open (fast, decisive), the inner panel eases open (measured, referential). Closing mirrors opening.
-
-**Empty and no-VMA states.** When a session has no rep longer than one lap — e.g. only 200m reps at Bertrand Dauvin — the toggle does not appear at all. A hidden toggle for empty data adds visual noise without purpose; suppression is cleaner. Off-track venues (Vincennes) follow the same rule: no track length, no toggle. When VMA is unset, the toggle also does not appear — its existence implies actionable data, and without a VMA there is none.
-
-**Mobile.** At narrow viewport widths the two-column table collapses: landmark distance and target time stack on a single row separated by an em-dash rather than column spacing. Each rep group occupies its own block. The panel itself scrolls within the card if it grows tall — it does not force the card to grow without bound.
+**Motion:** Unchanged from v2. The panel unfurls with a soft max-height transition, visually slower than the parent accordion's snap-open, closing the same way.
 
 ## Acceptance criteria
 
-- [ ] The session description text is visually identical to today — no split annotations inline, no new rows between rep lines
-- [ ] A "Temps de passage" stopwatch-labeled toggle appears bottom-right of the content block only when: VMA is set, the session venue has a known track length, and at least one rep in the session is longer than one lap
-- [ ] Tapping the toggle reveals the passage-time panel; tapping again collapses it; the toggle icon turns blue when the panel is open
-- [ ] The panel groups passage times by rep, with a small muted all-caps label per rep before its rows
-- [ ] Passage rows use a two-column layout: landmark distance (right-aligned) and target time (left-aligned), in monospaced type one step smaller than the main session text
-- [ ] Timed-block reps show passage rows with an "estimé" parenthetical on their label
-- [ ] The panel opening motion is a smooth vertical unfurl visually distinct from the parent card's snap-open behavior
-- [ ] At narrow viewport widths the two-column layout collapses gracefully to stacked landmark–dash–time rows
-- [ ] Sessions at off-track venues (Vincennes) show no toggle
-- [ ] Sessions where no rep exceeds one lap show no toggle
-- [ ] When VMA is unset, no toggle appears anywhere
+- [ ] The "Temps de passage" toggle has a visible border at rest — it reads as a pressable chip, not a text label
+- [ ] The chip border shifts from the default border tone to the site's blue when the panel is open; the stopwatch icon also turns blue when open
+- [ ] No downward chevron on the toggle in any state
+- [ ] The toggle chip sits flush to the bottom-right of the session content block, after the last description line
+- [ ] Each rep group's landmarks appear on a single horizontal row: pairs flow inline, separated by a centred dot, not stacked in a table
+- [ ] Within each pair, distance and time stay tightly together with no separator between them
+- [ ] The rep-group label (e.g. "1000M À 90% VMA") remains on its own line above the inline landmark row
+- [ ] On narrow viewports the landmark row wraps between pairs; no pair is split across lines; the dot separator stays with the following pair
+- [ ] Desktop table and mobile stacked-row structures from v2 are replaced by the single inline row on all viewport widths
+- [ ] All v2 suppression rules remain: no toggle when VMA unset, off-track venue, or no qualifying rep
+- [ ] Timed-block rep labels still carry the "(estimé)" parenthetical
+- [ ] Panel unfurl motion remains a smooth max-height transition, distinct from the parent accordion's snap
