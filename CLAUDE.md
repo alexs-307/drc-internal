@@ -168,7 +168,16 @@ Schema source of truth: `supabase/migrations/0001_init.sql`. (No `insert_race.sh
 }
 ```
 
-Venue values in use: `"Bertrand Dauvin"`, `"Max Roussie"`, `"Métro Château de Vincennes"`.
+Venue values in use:
+
+| Venue | Type | Lap length |
+|---|---|---|
+| `Bertrand Dauvin` | Track | 300m |
+| `Max Roussie` | Track | 400m |
+| `Stade des Poissonniers` | Track | 400m |
+| `Métro Château de Vincennes` | Off-track (Vincennes-forest pyramid / hill / outdoor sessions) | — |
+
+The lap length is consumed by the "Temps de passage" feature on the Entrainement tab (`VENUE_TRACK_LENGTHS` constant in `index.html`, alongside `annotateVMA` and `extractPassageData`). Off-track venues are deliberately absent from the map — sessions there carry no toggle, which is the correct behaviour. When a new track venue starts being used, add the venue string + its lap length to the constant in the same PR that ships the first session at that venue (frontend-only change, no DB migration needed).
 
 Session content is plain text — no HTML. The VMA annotator parses it at render time and injects `<span>` badges inline. For a one-off manual insert (outside the skill) you can also edit the `sessions` table directly in Supabase Studio.
 
