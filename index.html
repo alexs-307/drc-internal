@@ -437,15 +437,17 @@
   }
   /* ===== PASSAGE PANEL (Temps de passage) ===== */
   .splits-toggle {
-    display: flex;
+    display: inline-flex;
     align-items: center;
     gap: 6px;
     margin-top: 10px;
     margin-left: auto;
     width: fit-content;
     background: none;
-    border: none;
-    padding: 4px 0;
+    /* Persistent bordered chip — border always visible so it reads as a pressable control at rest, not a text label. Transparent fill: border alone is sufficient given the mono/uppercase treatment. */
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 4px 10px;
     cursor: pointer;
     font-family: var(--font-mono);
     font-size: 11px;
@@ -453,11 +455,13 @@
     text-transform: uppercase;
     letter-spacing: 0.1em;
     color: var(--graphite);
-    transition: color 0.15s;
+    transition: color 0.15s, border-color 0.15s;
     user-select: none;
   }
-  .splits-toggle:hover { color: var(--text); }
-  .splits-toggle.active { color: var(--graphite); }
+  /* Hover: border sharpens toward text tone, label sharpens */
+  .splits-toggle:hover { color: var(--text); border-color: var(--text); }
+  /* Open state: border + icon turn blue; label stays graphite — the border+icon pair is the active signal */
+  .splits-toggle.active { color: var(--graphite); border-color: var(--blue); }
   .splits-toggle svg {
     width: 14px;
     height: 14px;
@@ -496,39 +500,32 @@
     margin-bottom: 6px;
   }
 
-  .splits-table {
-    border-collapse: collapse;
-    width: auto;
-  }
-  .splits-table td {
+  /* Inline landmark row — single layout for all viewport widths.
+     Pairs flow inline left-to-right; the dot wraps with the following pair
+     so no dot is ever orphaned at the end of a line. */
+  .splits-landmarks {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0;
     font-family: var(--font-mono);
     font-size: 11px;
     color: var(--graphite);
-    padding: 1px 0;
-    line-height: 1.5;
+    line-height: 1.6;
+  }
+  /* First pair: no leading dot */
+  .splits-pair {
     white-space: nowrap;
   }
-  .splits-table td.s-dist {
-    text-align: right;
-    padding-right: 12px;
-    min-width: 44px;
+  /* Subsequent pairs: dot is part of the same nowrap unit so it wraps with the following pair */
+  .splits-pair-sep {
+    white-space: nowrap;
+    margin-left: 0.9em;
   }
-  .splits-table td.s-time {
-    text-align: left;
-  }
-
-  @media (max-width: 700px) {
-    .splits-table { display: none; }
-    .splits-table-mobile { display: block; }
-    .splits-mobile-row {
-      font-family: var(--font-mono);
-      font-size: 11px;
-      color: var(--graphite);
-      line-height: 1.6;
-    }
-  }
-  @media (min-width: 701px) {
-    .splits-table-mobile { display: none; }
+  .splits-pair-sep::before {
+    content: '·';
+    margin-right: 0.9em;
+    /* Middle dot (U+00B7) at mid-height between baseline and cap — no extra vertical offset needed in this context */
+    color: var(--graphite);
   }
 
   /* ===== TAB 3 — SÉANCES ===== */
@@ -2501,18 +2498,19 @@ function renderSessions(list) {
         const repLabel = g.estimated
           ? g.label + ' <span style="font-weight:400;text-transform:none;letter-spacing:0;">(estimé)</span>'
           : g.label;
-        // Desktop: two-column table
-        const tableRows = g.landmarks.map(lm =>
-          `<tr><td class="s-dist">${lm.distance}m</td><td class="s-time">${lm.time}</td></tr>`
-        ).join('');
-        // Mobile: stacked rows
-        const mobileRows = g.landmarks.map(lm =>
-          `<div class="splits-mobile-row">${lm.distance}m — ${lm.time}</div>`
-        ).join('');
+        // Single inline landmark row — one layout for all viewport widths.
+        // First pair has no leading dot; subsequent pairs use .splits-pair-sep whose
+        // ::before pseudo-element renders the centre dot (U+00B7) so the dot wraps
+        // with its following pair and is never orphaned at the end of a line.
+        const pairsHtml = g.landmarks.map((lm, i) => {
+          const pairContent = `${lm.distance}m ${lm.time}`;
+          return i === 0
+            ? `<span class="splits-pair">${pairContent}</span>`
+            : `<span class="splits-pair-sep">${pairContent}</span>`;
+        }).join('');
         return `<div class="splits-rep-group">
           <div class="splits-rep-label">${repLabel}</div>
-          <table class="splits-table"><tbody>${tableRows}</tbody></table>
-          <div class="splits-table-mobile">${mobileRows}</div>
+          <div class="splits-landmarks">${pairsHtml}</div>
         </div>`;
       }).join('');
 
