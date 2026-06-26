@@ -5,7 +5,34 @@
 >
 > Paired design brief: `.claude/design-briefs/track-session-splits.md` (visual treatment).
 > This audit covers the data side only — where the venue → track-length map lives, and
-> how the existing VMA annotator extends to emit split times.
+> how passage times are computed and surfaced.
+
+---
+
+## v2 revision note (supersedes the v1 inline model below where they conflict)
+
+The v1 plan — inject split badges inline into the annotated session text via an extended
+`annotateVMA` — shipped and was **rejected by the user**: always-on inline rows fragmented
+the session description and hurt readability. v2 changes two things:
+
+1. **Display model → on-demand per-card disclosure.** Passage times no longer live inline in
+   the description. Each session card gets a single "Temps de passage" toggle that reveals a
+   reference panel (see design brief v2). The description text reverts to exactly today's
+   rendering. **Implication for the code:** `annotateVMA` reverts to its original
+   two-pattern form (blue distance badge + amber timed badge, no splits). A *separate*
+   pass computes passage data per session and the renderer builds the toggle + panel.
+   The inline `.vma-splits` span and the splits branch inside `annotateVMA` are removed.
+
+2. **Timed blocks are now in scope.** v1 excluded them. v2 includes them: for a timed effort
+   (`<minutes>' à <pct>% VMA`), derive the distance covered at that pace
+   (`distance = vma × pct/100 × minutes/60 × 1000` metres) and emit passage landmarks at each
+   lap multiple up to that distance. These are pace-estimates, flagged "estimé" in the panel.
+
+3. **All track venues, by lap length** (unchanged from the confirmed mapping below): 300m → 300/600/900…, 400m → 400/800/1200…, up to (not including) the rep total.
+
+Sections 2–6 below are the original v1 record; read them through the lens of the three deltas above.
+
+---
 
 ---
 
