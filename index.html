@@ -435,6 +435,98 @@
   .vma-hint.timed {
     background: #D97706;
   }
+  /* ===== PASSAGE PANEL (Temps de passage) ===== */
+  .splits-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 10px;
+    margin-left: auto;
+    width: fit-content;
+    background: none;
+    /* Persistent bordered chip — border always visible so it reads as a pressable control at rest, not a text label. Transparent fill: border alone is sufficient given the mono/uppercase treatment. */
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 4px 10px;
+    cursor: pointer;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--graphite);
+    transition: color 0.15s, border-color 0.15s;
+    user-select: none;
+  }
+  /* Hover: border sharpens toward text tone, label sharpens */
+  .splits-toggle:hover { color: var(--text); border-color: var(--text); }
+  /* Open state: border + icon turn blue; label stays graphite — the border+icon pair is the active signal */
+  .splits-toggle.active { color: var(--graphite); border-color: var(--blue); }
+  .splits-toggle svg {
+    width: 14px;
+    height: 14px;
+    flex-shrink: 0;
+    transition: color 0.15s;
+  }
+  .splits-toggle.active svg { color: var(--blue); }
+
+  .splits-panel {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease;
+  }
+  .splits-panel.open { max-height: 600px; }
+
+  .splits-panel-inner {
+    border-top: 1px solid var(--border);
+    margin-top: 10px;
+    padding: 12px 14px;
+    background: var(--bg);
+    border-radius: 0 0 var(--radius-sm) var(--radius-sm);
+  }
+
+  .splits-rep-group {
+    margin-bottom: 14px;
+  }
+  .splits-rep-group:last-child { margin-bottom: 0; }
+
+  .splits-rep-label {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--graphite);
+    margin-bottom: 6px;
+  }
+
+  /* Inline landmark row — single layout for all viewport widths.
+     Pairs flow inline left-to-right; the dot wraps with the following pair
+     so no dot is ever orphaned at the end of a line. */
+  .splits-landmarks {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--graphite);
+    line-height: 1.6;
+  }
+  /* First pair: no leading dot */
+  .splits-pair {
+    white-space: nowrap;
+  }
+  /* Subsequent pairs: dot is part of the same nowrap unit so it wraps with the following pair */
+  .splits-pair-sep {
+    white-space: nowrap;
+    margin-left: 0.9em;
+  }
+  .splits-pair-sep::before {
+    content: '·';
+    margin-right: 0.9em;
+    /* Middle dot (U+00B7) at mid-height between baseline and cap — no extra vertical offset needed in this context */
+    color: var(--graphite);
+  }
 
   /* ===== TAB 3 — SÉANCES ===== */
   .search-bar {
@@ -2398,6 +2490,47 @@ function renderSessions(list) {
         ${g3Html}`;
     }
 
+    // Build the "Temps de passage" panel if there is qualifying passage data
+    const passageGroups = extractPassageData(s, vma);
+    let splitsHtml = '';
+    if (passageGroups.length > 0) {
+      const groupsHtml = passageGroups.map(g => {
+        const repLabel = g.estimated
+          ? g.label + ' <span style="font-weight:400;text-transform:none;letter-spacing:0;">(estimé)</span>'
+          : g.label;
+        // Single inline landmark row — one layout for all viewport widths.
+        // First pair has no leading dot; subsequent pairs use .splits-pair-sep whose
+        // ::before pseudo-element renders the centre dot (U+00B7) so the dot wraps
+        // with its following pair and is never orphaned at the end of a line.
+        const pairsHtml = g.landmarks.map((lm, i) => {
+          const pairContent = `${lm.distance}m ${lm.time}`;
+          return i === 0
+            ? `<span class="splits-pair">${pairContent}</span>`
+            : `<span class="splits-pair-sep">${pairContent}</span>`;
+        }).join('');
+        return `<div class="splits-rep-group">
+          <div class="splits-rep-label">${repLabel}</div>
+          <div class="splits-landmarks">${pairsHtml}</div>
+        </div>`;
+      }).join('');
+
+      splitsHtml = `
+        <button class="splits-toggle" type="button" onclick="toggleSplits(event, this)" aria-expanded="false">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="8" cy="9" r="5.25"/>
+            <path d="M8 6.5V9l1.5 1.5"/>
+            <path d="M6 1.5h4"/>
+            <path d="M8 1.5V3.75"/>
+          </svg>
+          Temps de passage
+        </button>
+        <div class="splits-panel" aria-hidden="true">
+          <div class="splits-panel-inner">
+            ${groupsHtml}
+          </div>
+        </div>`;
+    }
+
     item.innerHTML = `
       <div class="session-header" onclick="toggleSession(this)">
         <span class="session-date-badge">${formatDate(s.date)}</span>
@@ -2407,6 +2540,7 @@ function renderSessions(list) {
       </div>
       <div class="session-body">
         ${bodyHtml}
+        ${splitsHtml}
       </div>`;
 
     container.appendChild(item);
@@ -2416,6 +2550,21 @@ function renderSessions(list) {
 function toggleSession(header) {
   const item = header.parentElement;
   item.classList.toggle('open');
+}
+
+// Toggle the "Temps de passage" panel on a session card.
+// Uses stopPropagation so it doesn't bubble up to toggleSession.
+function toggleSplits(evt, btn) {
+  evt.stopPropagation(); // prevent bubbling to session-item (defensive — button is a sibling of session-header, not a descendant)
+  const panel = btn.nextElementSibling;
+  const isOpen = panel.classList.contains('open');
+  panel.classList.toggle('open', !isOpen);
+  btn.classList.toggle('active', !isOpen);
+  btn.setAttribute('aria-expanded', String(!isOpen));
+  panel.setAttribute('aria-hidden', String(isOpen));
+  // Prevent the click from reaching the session-header's toggleSession handler
+  // (the button is inside session-body so it won't naturally bubble there,
+  // but guard explicitly against any future DOM restructuring)
 }
 
 function filterSessions() {
@@ -2743,24 +2892,36 @@ function formatPace(kmh) {
   return formatSecs(3600 / kmh);
 }
 
+// Venue → lap length in metres. Venues absent from this map (e.g. off-track outdoor
+// sessions at Métro Château de Vincennes) produce no splits — correct behavior.
+const VENUE_TRACK_LENGTHS = {
+  'Bertrand Dauvin': 300,
+  'Max Roussie': 400,
+  'Stade des Poissonniers': 400,
+};
+
+// Shared regex pattern strings — used by both annotateVMA and extractPassageData.
+// Using String.raw to avoid double-escaping backslashes.
+const VMA_DIST_PATTERN  = String.raw`(\d+)\s*m\s*à\s*(\d+)(?:\s*[-–]\s*(\d+))?\s*%\s*VMA`;
+const VMA_TIMED_PATTERN = String.raw`(\d+)'\s*(?:à|allure)\s*(\d+)(?:\s*[-–]\s*(\d+))?\s*%\s*VMA`;
+
 function annotateVMA(text, vma) {
   if (!vma || vma <= 0) return text;
 
-  // Pattern 1 — distance: "400m à 100% VMA" or "400 m à 100-110% VMA"
+  // Pattern 1 — distance rep: "400m à 100% VMA" or "400 m à 100-110% VMA"
   text = text.replace(
-    /(\d+)\s*m\s*à\s*(\d+)(?:\s*[-–]\s*(\d+))?\s*%\s*VMA/g,
+    new RegExp(VMA_DIST_PATTERN, 'g'),
     (match, dist, pct1, pct2) => {
       const pct = pct2 ? (parseInt(pct1) + parseInt(pct2)) / 2 : parseInt(pct1);
-      const speedMs = vma * pct / 100 / 3.6; // m/s
+      const speedMs = vma * pct / 100 / 3.6;
       const secs = parseInt(dist) / speedMs;
       return `${match}<span class="vma-hint">${formatSecs(secs)}</span>`;
     }
   );
 
-  // Pattern 2 — timed block: "6'" or "4'" before "% VMA" or "allure X% VMA" or "à X% VMA"
-  // Matches: "3' à 90% VMA", "6' allure 90% VMA", "8' de 30/30" — only when followed by %
+  // Pattern 2 — timed block: "3' à 90% VMA", "6' allure 90% VMA"
   text = text.replace(
-    /(\d+)'\s*(?:à|allure)\s*(\d+)(?:\s*[-–]\s*(\d+))?\s*%\s*VMA/g,
+    new RegExp(VMA_TIMED_PATTERN, 'g'),
     (match, mins, pct1, pct2) => {
       const pct = pct2 ? (parseInt(pct1) + parseInt(pct2)) / 2 : parseInt(pct1);
       const speed = vma * pct / 100; // km/h
@@ -2770,6 +2931,65 @@ function annotateVMA(text, vma) {
   );
 
   return text;
+}
+
+// Compute passage landmark data for the per-card "Temps de passage" panel.
+// Returns an array of rep groups (empty array = no panel rendered).
+// Each group: { label: string, estimated: boolean, landmarks: [{distance, time}] }
+function extractPassageData(s, vma) {
+  if (!vma || vma <= 0) return [];
+  const lapLength = VENUE_TRACK_LENGTHS[s.venue];
+  if (!lapLength) return [];
+
+  const groups = [];
+  const seen = new Set(); // deduplicate identical rep descriptions across text blocks
+
+  const blocks = [s.g12, s.g3, s.suggestion].filter(Boolean);
+
+  blocks.forEach(block => {
+    // Distance reps
+    const reD = new RegExp(VMA_DIST_PATTERN, 'g');
+    let m;
+    while ((m = reD.exec(block)) !== null) {
+      const [match, dist, pct1, pct2] = m;
+      const key = 'd:' + match;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      const repDist = parseInt(dist);
+      if (repDist <= lapLength) continue; // not longer than one lap — no landmarks
+      const pct = pct2 ? (parseInt(pct1) + parseInt(pct2)) / 2 : parseInt(pct1);
+      const speedMs = vma * pct / 100 / 3.6;
+      const lapCount = Math.floor((repDist - 1) / lapLength);
+      const landmarks = [];
+      for (let i = 1; i <= lapCount; i++) {
+        const landmarkM = i * lapLength;
+        landmarks.push({ distance: landmarkM, time: formatSecs(landmarkM / speedMs) });
+      }
+      groups.push({ label: match.trim(), estimated: false, landmarks });
+    }
+
+    // Timed blocks
+    const reT = new RegExp(VMA_TIMED_PATTERN, 'g');
+    while ((m = reT.exec(block)) !== null) {
+      const [match, mins, pct1, pct2] = m;
+      const key = 't:' + match;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      const pct = pct2 ? (parseInt(pct1) + parseInt(pct2)) / 2 : parseInt(pct1);
+      const speedMs = vma * pct / 100 / 3.6;
+      const derivedDist = speedMs * parseInt(mins) * 60; // metres at this pace
+      if (derivedDist <= lapLength) continue;
+      const lapCount = Math.floor(derivedDist / lapLength);
+      const landmarks = [];
+      for (let i = 1; i <= lapCount; i++) {
+        const landmarkM = i * lapLength;
+        landmarks.push({ distance: landmarkM, time: formatSecs(landmarkM / speedMs) });
+      }
+      groups.push({ label: match.trim(), estimated: true, landmarks });
+    }
+  });
+
+  return groups;
 }
 
 function updateVMASummary(vma) {
