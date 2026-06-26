@@ -435,16 +435,100 @@
   .vma-hint.timed {
     background: #D97706;
   }
-  .vma-splits {
-    display: block;
+  /* ===== PASSAGE PANEL (Temps de passage) ===== */
+  .splits-toggle {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 10px;
+    margin-left: auto;
+    width: fit-content;
+    background: none;
+    border: none;
+    padding: 4px 0;
+    cursor: pointer;
     font-family: var(--font-mono);
-    font-size: 0.72rem;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
     color: var(--graphite);
-    margin-top: 2px;
-    padding-left: 1em;
-    white-space: pre-wrap;
-    line-height: 1.6;
-    letter-spacing: 0.01em;
+    transition: color 0.15s;
+    user-select: none;
+  }
+  .splits-toggle:hover { color: var(--text); }
+  .splits-toggle.active { color: var(--graphite); }
+  .splits-toggle svg {
+    width: 14px;
+    height: 14px;
+    flex-shrink: 0;
+    transition: color 0.15s;
+  }
+  .splits-toggle.active svg { color: var(--blue); }
+
+  .splits-panel {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease;
+  }
+  .splits-panel.open { max-height: 600px; }
+
+  .splits-panel-inner {
+    border-top: 1px solid var(--border);
+    margin-top: 10px;
+    padding: 12px 14px;
+    background: var(--bg);
+    border-radius: 0 0 var(--radius-sm) var(--radius-sm);
+  }
+
+  .splits-rep-group {
+    margin-bottom: 14px;
+  }
+  .splits-rep-group:last-child { margin-bottom: 0; }
+
+  .splits-rep-label {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--graphite);
+    margin-bottom: 6px;
+  }
+
+  .splits-table {
+    border-collapse: collapse;
+    width: auto;
+  }
+  .splits-table td {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--graphite);
+    padding: 1px 0;
+    line-height: 1.5;
+    white-space: nowrap;
+  }
+  .splits-table td.s-dist {
+    text-align: right;
+    padding-right: 12px;
+    min-width: 44px;
+  }
+  .splits-table td.s-time {
+    text-align: left;
+  }
+
+  @media (max-width: 700px) {
+    .splits-table { display: none; }
+    .splits-table-mobile { display: block; }
+    .splits-mobile-row {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--graphite);
+      line-height: 1.6;
+    }
+  }
+  @media (min-width: 701px) {
+    .splits-table-mobile { display: none; }
   }
 
   /* ===== TAB 3 — SÉANCES ===== */
@@ -2372,10 +2456,9 @@ function renderSessions(list) {
     const item = document.createElement('div');
     item.className = 'session-item';
 
-    const trackLengthM = VENUE_TRACK_LENGTHS[s.venue] || null;
-    const g12ann = annotateVMA(s.g12, vma, trackLengthM);
-    const g3ann  = s.g3 ? annotateVMA(s.g3, vma, trackLengthM) : null;
-    const sugang = s.suggestion ? annotateVMA(s.suggestion, vma, trackLengthM) : null;
+    const g12ann = annotateVMA(s.g12, vma);
+    const g3ann  = s.g3 ? annotateVMA(s.g3, vma) : null;
+    const sugang = s.suggestion ? annotateVMA(s.suggestion, vma) : null;
 
     const g3Html = g3ann ? `
       <div class="session-block">
@@ -2410,6 +2493,46 @@ function renderSessions(list) {
         ${g3Html}`;
     }
 
+    // Build the "Temps de passage" panel if there is qualifying passage data
+    const passageGroups = extractPassageData(s, vma);
+    let splitsHtml = '';
+    if (passageGroups.length > 0) {
+      const groupsHtml = passageGroups.map(g => {
+        const repLabel = g.estimated
+          ? g.label + ' <span style="font-weight:400;text-transform:none;letter-spacing:0;">(estimé)</span>'
+          : g.label;
+        // Desktop: two-column table
+        const tableRows = g.landmarks.map(lm =>
+          `<tr><td class="s-dist">${lm.distance}m</td><td class="s-time">${lm.time}</td></tr>`
+        ).join('');
+        // Mobile: stacked rows
+        const mobileRows = g.landmarks.map(lm =>
+          `<div class="splits-mobile-row">${lm.distance}m — ${lm.time}</div>`
+        ).join('');
+        return `<div class="splits-rep-group">
+          <div class="splits-rep-label">${repLabel}</div>
+          <table class="splits-table"><tbody>${tableRows}</tbody></table>
+          <div class="splits-table-mobile">${mobileRows}</div>
+        </div>`;
+      }).join('');
+
+      splitsHtml = `
+        <button class="splits-toggle" type="button" onclick="toggleSplits(event, this)" aria-expanded="false">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="8" cy="9" r="5.25"/>
+            <path d="M8 6.5V9l1.5 1.5"/>
+            <path d="M6 1.5h4"/>
+            <path d="M8 1.5V3.75"/>
+          </svg>
+          Temps de passage
+        </button>
+        <div class="splits-panel" aria-hidden="true">
+          <div class="splits-panel-inner">
+            ${groupsHtml}
+          </div>
+        </div>`;
+    }
+
     item.innerHTML = `
       <div class="session-header" onclick="toggleSession(this)">
         <span class="session-date-badge">${formatDate(s.date)}</span>
@@ -2419,6 +2542,7 @@ function renderSessions(list) {
       </div>
       <div class="session-body">
         ${bodyHtml}
+        ${splitsHtml}
       </div>`;
 
     container.appendChild(item);
@@ -2428,6 +2552,21 @@ function renderSessions(list) {
 function toggleSession(header) {
   const item = header.parentElement;
   item.classList.toggle('open');
+}
+
+// Toggle the "Temps de passage" panel on a session card.
+// Uses stopPropagation so it doesn't bubble up to toggleSession.
+function toggleSplits(evt, btn) {
+  evt.stopPropagation(); // prevent bubbling to session-item (defensive — button is a sibling of session-header, not a descendant)
+  const panel = btn.nextElementSibling;
+  const isOpen = panel.classList.contains('open');
+  panel.classList.toggle('open', !isOpen);
+  btn.classList.toggle('active', !isOpen);
+  btn.setAttribute('aria-expanded', String(!isOpen));
+  panel.setAttribute('aria-hidden', String(isOpen));
+  // Prevent the click from reaching the session-header's toggleSession handler
+  // (the button is inside session-body so it won't naturally bubble there,
+  // but guard explicitly against any future DOM restructuring)
 }
 
 function filterSessions() {
@@ -2763,40 +2902,28 @@ const VENUE_TRACK_LENGTHS = {
   'Stade des Poissonniers': 400,
 };
 
-function annotateVMA(text, vma, trackLengthM) {
+// Shared regex pattern strings — used by both annotateVMA and extractPassageData.
+// Using String.raw to avoid double-escaping backslashes.
+const VMA_DIST_PATTERN  = String.raw`(\d+)\s*m\s*à\s*(\d+)(?:\s*[-–]\s*(\d+))?\s*%\s*VMA`;
+const VMA_TIMED_PATTERN = String.raw`(\d+)'\s*(?:à|allure)\s*(\d+)(?:\s*[-–]\s*(\d+))?\s*%\s*VMA`;
+
+function annotateVMA(text, vma) {
   if (!vma || vma <= 0) return text;
 
-  // Pattern 1 — distance: "400m à 100% VMA" or "400 m à 100-110% VMA"
+  // Pattern 1 — distance rep: "400m à 100% VMA" or "400 m à 100-110% VMA"
   text = text.replace(
-    /(\d+)\s*m\s*à\s*(\d+)(?:\s*[-–]\s*(\d+))?\s*%\s*VMA/g,
+    new RegExp(VMA_DIST_PATTERN, 'g'),
     (match, dist, pct1, pct2) => {
       const pct = pct2 ? (parseInt(pct1) + parseInt(pct2)) / 2 : parseInt(pct1);
-      const speedMs = vma * pct / 100 / 3.6; // m/s
+      const speedMs = vma * pct / 100 / 3.6;
       const secs = parseInt(dist) / speedMs;
-      let result = `${match}<span class="vma-hint">${formatSecs(secs)}</span>`;
-
-      // Emit intermediate split landmarks when the rep is longer than one lap
-      if (trackLengthM && parseInt(dist) > trackLengthM) {
-        const repDist = parseInt(dist);
-        const lapCount = Math.floor((repDist - 1) / trackLengthM);
-        const pairs = [];
-        for (let i = 1; i <= lapCount; i++) {
-          const landmarkM = i * trackLengthM;
-          const landmarkSecs = landmarkM / speedMs;
-          pairs.push(`${landmarkM}m ${formatSecs(landmarkSecs)}`);
-        }
-        result += `<span class="vma-splits">${pairs.join('  ')}</span>`;
-      }
-
-      return result;
+      return `${match}<span class="vma-hint">${formatSecs(secs)}</span>`;
     }
   );
 
-  // Pattern 2 — timed block: "6'" or "4'" before "% VMA" or "allure X% VMA" or "à X% VMA"
-  // Matches: "3' à 90% VMA", "6' allure 90% VMA", "8' de 30/30" — only when followed by %
-  // No splits for timed blocks — the distance is unknown per-lap.
+  // Pattern 2 — timed block: "3' à 90% VMA", "6' allure 90% VMA"
   text = text.replace(
-    /(\d+)'\s*(?:à|allure)\s*(\d+)(?:\s*[-–]\s*(\d+))?\s*%\s*VMA/g,
+    new RegExp(VMA_TIMED_PATTERN, 'g'),
     (match, mins, pct1, pct2) => {
       const pct = pct2 ? (parseInt(pct1) + parseInt(pct2)) / 2 : parseInt(pct1);
       const speed = vma * pct / 100; // km/h
@@ -2806,6 +2933,65 @@ function annotateVMA(text, vma, trackLengthM) {
   );
 
   return text;
+}
+
+// Compute passage landmark data for the per-card "Temps de passage" panel.
+// Returns an array of rep groups (empty array = no panel rendered).
+// Each group: { label: string, estimated: boolean, landmarks: [{distance, time}] }
+function extractPassageData(s, vma) {
+  if (!vma || vma <= 0) return [];
+  const lapLength = VENUE_TRACK_LENGTHS[s.venue];
+  if (!lapLength) return [];
+
+  const groups = [];
+  const seen = new Set(); // deduplicate identical rep descriptions across text blocks
+
+  const blocks = [s.g12, s.g3, s.suggestion].filter(Boolean);
+
+  blocks.forEach(block => {
+    // Distance reps
+    const reD = new RegExp(VMA_DIST_PATTERN, 'g');
+    let m;
+    while ((m = reD.exec(block)) !== null) {
+      const [match, dist, pct1, pct2] = m;
+      const key = 'd:' + match;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      const repDist = parseInt(dist);
+      if (repDist <= lapLength) continue; // not longer than one lap — no landmarks
+      const pct = pct2 ? (parseInt(pct1) + parseInt(pct2)) / 2 : parseInt(pct1);
+      const speedMs = vma * pct / 100 / 3.6;
+      const lapCount = Math.floor((repDist - 1) / lapLength);
+      const landmarks = [];
+      for (let i = 1; i <= lapCount; i++) {
+        const landmarkM = i * lapLength;
+        landmarks.push({ distance: landmarkM, time: formatSecs(landmarkM / speedMs) });
+      }
+      groups.push({ label: match.trim(), estimated: false, landmarks });
+    }
+
+    // Timed blocks
+    const reT = new RegExp(VMA_TIMED_PATTERN, 'g');
+    while ((m = reT.exec(block)) !== null) {
+      const [match, mins, pct1, pct2] = m;
+      const key = 't:' + match;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      const pct = pct2 ? (parseInt(pct1) + parseInt(pct2)) / 2 : parseInt(pct1);
+      const speedMs = vma * pct / 100 / 3.6;
+      const derivedDist = speedMs * parseInt(mins) * 60; // metres at this pace
+      if (derivedDist <= lapLength) continue;
+      const lapCount = Math.floor(derivedDist / lapLength);
+      const landmarks = [];
+      for (let i = 1; i <= lapCount; i++) {
+        const landmarkM = i * lapLength;
+        landmarks.push({ distance: landmarkM, time: formatSecs(landmarkM / speedMs) });
+      }
+      groups.push({ label: match.trim(), estimated: true, landmarks });
+    }
+  });
+
+  return groups;
 }
 
 function updateVMASummary(vma) {
