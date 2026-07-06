@@ -2959,7 +2959,7 @@ function extractPassageData(s, vma) {
       if (repDist <= lapLength) continue; // not longer than one lap — no landmarks
       const pct = pct2 ? (parseInt(pct1) + parseInt(pct2)) / 2 : parseInt(pct1);
       const speedMs = vma * pct / 100 / 3.6;
-      const lapCount = Math.floor((repDist - 1) / lapLength);
+      const lapCount = Math.floor(repDist / lapLength);
       const landmarks = [];
       for (let i = 1; i <= lapCount; i++) {
         const landmarkM = i * lapLength;
