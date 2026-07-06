@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="robots" content="noindex, nofollow" />
+<title>Spike — Export Garmin .FIT (DRC)</title>
+<style>
+  /* Utilitarian styling, reusing the site's design tokens (see CLAUDE.md
+     "Design system") — this page is a spike tool, not the public site, so
+     layout stays minimal, but colors/radii/font match the existing palette. */
+  :root {
+    --blue: #001EFF;
+    --blue-light: #3348FF;
+    --blue-faint: #EEF0FF;
+    --peach: #FFE1D2;
+    --bg: #F6F6F6;
+    --white: #FFFFFF;
+    --text: #0D0D0D;
+    --text-muted: #5A5A5A;
+    --border: #E2E2E2;
+    --radius: 10px;
+    --radius-sm: 6px;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding: 32px 24px 64px;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+  .wrap { max-width: 900px; margin: 0 auto; }
+  h1 { font-size: 20px; margin: 0 0 4px; }
+  .subtitle { color: var(--text-muted); font-size: 13px; margin: 0 0 24px; }
+  .card {
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px;
+    margin-bottom: 20px;
+  }
+  .card h2 { font-size: 15px; margin: 0 0 12px; }
+  .controls { display: flex; flex-wrap: wrap; gap: 20px; align-items: flex-end; }
+  label { display: block; font-size: 12px; color: var(--text-muted); margin-bottom: 6px; }
+  input[type="number"] {
+    font-size: 14px;
+    padding: 8px 10px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    width: 120px;
+  }
+  .group-toggle { display: flex; gap: 8px; }
+  .group-toggle button {
+    font-size: 13px;
+    padding: 8px 14px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--white);
+    color: var(--text-muted);
+    cursor: pointer;
+  }
+  .group-toggle button.active {
+    border-color: var(--blue);
+    color: var(--blue);
+    background: var(--blue-faint);
+  }
+  button.primary {
+    font-size: 14px;
+    padding: 10px 18px;
+    border: none;
+    border-radius: var(--radius-sm);
+    background: var(--blue);
+    color: var(--white);
+    cursor: pointer;
+  }
+  button.primary:hover { background: var(--blue-light); }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th, td { text-align: left; padding: 7px 8px; border-bottom: 1px solid var(--border); }
+  th { color: var(--text-muted); font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: 0.03em; }
+  tr.repeat-header td {
+    background: var(--blue-faint);
+    color: var(--blue);
+    font-weight: 600;
+    font-size: 12px;
+  }
+  tr.kind-warmup td:first-child, tr.kind-cooldown td:first-child { color: var(--text-muted); }
+  tr.kind-recovery td:first-child { color: var(--text-muted); }
+  .badge {
+    display: inline-block;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    padding: 2px 6px;
+    border-radius: 4px;
+    background: var(--peach);
+    color: var(--text);
+  }
+  .note { font-size: 12px; color: var(--text-muted); margin-top: 12px; }
+  .footer-note { font-size: 12px; color: var(--text-muted); }
+  code { background: var(--blue-faint); padding: 1px 5px; border-radius: 4px; font-size: 12px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Spike — Export Garmin .FIT</h1>
+  <p class="subtitle" id="session-subtitle">Chargement…</p>
+
+  <div class="card">
+    <h2>Paramètres</h2>
+    <div class="controls">
+      <div>
+        <label for="vma-input">VMA (km/h)</label>
+        <input id="vma-input" type="number" step="0.1" min="8" max="26" />
+      </div>
+      <div>
+        <label>Groupe</label>
+        <div class="group-toggle" id="group-toggle">
+          <button type="button" data-group="g12">G1/G2</button>
+          <button type="button" data-group="g3">G3</button>
+        </div>
+      </div>
+      <div>
+        <button type="button" class="primary" id="download-btn">Télécharger .FIT</button>
+      </div>
+    </div>
+    <p class="note">
+      La VMA est lue depuis <code>localStorage['drc_vma']</code> si présente (même clé que le
+      site principal), sinon valeur par défaut 16.0 km/h. Modifiable ici sans toucher au site.
+    </p>
+  </div>
+
+  <div class="card">
+    <h2>Aperçu des étapes</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Étape</th>
+          <th>Type</th>
+          <th>Durée / distance</th>
+          <th>Allure basse (band low)</th>
+          <th>Allure cible</th>
+          <th>Allure haute (band high)</th>
+        </tr>
+      </thead>
+      <tbody id="preview-body"></tbody>
+    </table>
+    <p class="note">
+      « Allure basse » correspond à la vitesse basse de la bande FIT (donc l'allure la plus
+      <em>lente</em> tolérée) ; « Allure haute » correspond à la vitesse haute (l'allure la plus
+      <em>rapide</em> tolérée). Bande par défaut&nbsp;: ±3&nbsp;% autour de la cible ponctuelle
+      (voir le design brief, §5, pour la justification).
+    </p>
+  </div>
+
+  <p class="footer-note">
+    Cette page est un outil de spike (voir <code>spike/README.md</code>) — pas de dépendance
+    réseau, ouvrable directement en <code>file://</code>.
+  </p>
+</div>
+
+<script src="fit-encoder.js"></script>
+<script src="session-model.js"></script>
+<script>
+(function () {
+  "use strict";
+
+  const VMA_STORAGE_KEY = "drc_vma";
+  const DEFAULT_VMA = 16.0;
+
+  const vmaInput = document.getElementById("vma-input");
+  const groupToggle = document.getElementById("group-toggle");
+  const previewBody = document.getElementById("preview-body");
+  const subtitle = document.getElementById("session-subtitle");
+  const downloadBtn = document.getElementById("download-btn");
+
+  let currentGroup = "g12";
+
+  function loadVma() {
+    const stored = window.localStorage.getItem(VMA_STORAGE_KEY);
+    const parsed = stored ? parseFloat(stored) : NaN;
+    return Number.isFinite(parsed) && parsed > 0 ? parsed : DEFAULT_VMA;
+  }
+
+  function saveVma(value) {
+    window.localStorage.setItem(VMA_STORAGE_KEY, String(value));
+  }
+
+  function currentVma() {
+    const v = parseFloat(vmaInput.value);
+    return Number.isFinite(v) && v > 0 ? v : DEFAULT_VMA;
+  }
+
+  function durationLabel(step) {
+    const d = step.duration || { type: "open" };
+    if (d.type === "time") {
+      const m = Math.floor(d.value / 60);
+      const s = d.value % 60;
+      return s ? `${m}'${s}"` : `${m}'`;
+    }
+    if (d.type === "distance") return `${d.value}m`;
+    return "libre";
+  }
+
+  function targetCells(step, vmaKmh) {
+    const band = window.FitEncoder.resolveTargetSpeedBand(step.target, vmaKmh);
+    if (!band) return ["—", "—", "—"];
+    const targetSpeedKmh =
+      step.target.pct != null
+        ? window.FitEncoder.vmaPctToSpeedMs(vmaKmh, step.target.pct) * 3.6
+        : (band.lowKmh + band.highKmh) / 2;
+    return [
+      window.FitEncoder.speedKmhToPace(band.lowKmh),
+      window.FitEncoder.speedKmhToPace(targetSpeedKmh) +
+        (step.target.pct != null ? ` (${step.target.pct}% VMA)` : ""),
+      window.FitEncoder.speedKmhToPace(band.highKmh),
+    ];
+  }
+
+  function kindLabel(kind) {
+    return { warmup: "Échauffement", work: "Travail", recovery: "Récup", cooldown: "Retour au calme", repeat_group: "Répétition" }[kind] || kind;
+  }
+
+  function renderPreview() {
+    const vmaKmh = currentVma();
+    const steps = window.DrcSessionModel.groups[currentGroup].steps;
+    previewBody.innerHTML = "";
+
+    for (const step of steps) {
+      if (step.kind === "repeat_group") {
+        const headerRow = document.createElement("tr");
+        headerRow.className = "repeat-header";
+        headerRow.innerHTML = `<td colspan="6">× ${step.repeat.count} — ${step.name}</td>`;
+        previewBody.appendChild(headerRow);
+
+        for (const bodyStep of step.repeat.steps) {
+          previewBody.appendChild(renderRow(bodyStep, vmaKmh));
+        }
+        continue;
+      }
+      previewBody.appendChild(renderRow(step, vmaKmh));
+    }
+  }
+
+  function renderRow(step, vmaKmh) {
+    const tr = document.createElement("tr");
+    tr.className = "kind-" + step.kind;
+    const [low, target, high] = targetCells(step, vmaKmh);
+    tr.innerHTML = `
+      <td>${step.name}</td>
+      <td>${kindLabel(step.kind)}</td>
+      <td>${durationLabel(step)}</td>
+      <td>${low}</td>
+      <td>${target}</td>
+      <td>${high}</td>
+    `;
+    return tr;
+  }
+
+  function updateSubtitle() {
+    const meta = window.DrcSessionModel.meta;
+    const groupLabel = window.DrcSessionModel.groups[currentGroup].label;
+    subtitle.textContent = `${meta.date} — ${meta.label} (${meta.venue}) — ${groupLabel}`;
+  }
+
+  function setGroup(group) {
+    currentGroup = group;
+    for (const btn of groupToggle.querySelectorAll("button")) {
+      btn.classList.toggle("active", btn.dataset.group === group);
+    }
+    updateSubtitle();
+    renderPreview();
+  }
+
+  function download() {
+    const vmaKmh = currentVma();
+    const session = window.DrcSessionModel;
+    const groupData = session.groups[currentGroup];
+    const bytes = window.FitEncoder.encodeWorkoutFit({
+      name: `${session.meta.label} (${groupData.label})`,
+      steps: groupData.steps,
+      vmaKmh,
+    });
+    const blob = new Blob([bytes], { type: "application/octet-stream" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    const groupSlug = currentGroup;
+    a.href = url;
+    a.download = `progressivite-allure-2026-05-05-${groupSlug}.fit`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+
+  groupToggle.addEventListener("click", (e) => {
+    const btn = e.target.closest("button[data-group]");
+    if (!btn) return;
+    setGroup(btn.dataset.group);
+  });
+
+  vmaInput.addEventListener("input", () => {
+    saveVma(currentVma());
+    renderPreview();
+  });
+
+  downloadBtn.addEventListener("click", download);
+
+  vmaInput.value = loadVma();
+  setGroup("g12");
+})();
+</script>
+</body>
+</html>
