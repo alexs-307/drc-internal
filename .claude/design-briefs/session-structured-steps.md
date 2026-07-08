@@ -28,7 +28,7 @@ Logical parts:
 |---|---|---|
 | Warmup | 20' EF · 15' gammes · 2 lignes droites, combined | Collapsed into **one** open (press-lap-to-advance) warmup step — see §2 warmup convention. None of the three components carries a pace target, so splitting them into separately-timed steps added device-side ceremony (three timers to click through) without adding enforceable guidance; the prescribed structure survives in the step `name`. |
 | Repeat group, ×3 (G1/G2) / ×2 (G3) | 900m @ 80% VMA → r 2' → 600m @ 90% VMA → r 2' → 300m @ 100% VMA → R 3' | Three distinct work steps per repetition, each at a different %VMA; `r` (lowercase) separates the three runs within one repetition, `R` (uppercase) separates repetitions themselves. All three recoveries (`r`, `r`, `R`) are TIME-prescribed in the source text, so per §2's recovery convention they are now open (press-lap) steps with the prescribed time folded into the `name` rather than timed steps — see §2. |
-| Cooldown | 5' easy jog | Fixed-time, no pace target — stays a single `type:"time"` step, unchanged behavior (see §2 cooldown convention) |
+| Cooldown | 5' easy jog | Collapsed into **one** open (press-lap-to-finish) cooldown step, no pace target — the prescribed 5' survives only in the step `name` as indicative guidance, not an enforced timer — see §2 cooldown convention |
 
 G3 differs only in repeat count (2 vs 3) — everything else (warmup, per-rep structure, cooldown) is identical. This is exactly the kind of parametric difference (count only) the structured model should capture without duplicating the whole step list.
 
@@ -41,6 +41,16 @@ G3 differs only in repeat count (2 vs 3) — everything else (warmup, per-rep st
 > TIME-prescribed recoveries (now open); its warmup and distance-prescribed recoveries are
 > unchanged, since the EM's revision request scoped the warmup-collapse convention to the
 > encoded chosen session, not a retroactive rewrite of every illustrative example in this brief.
+
+> **Revision note (further revision):** the cooldown is now also a single open (press-lap-to-
+> finish) step, joining warmup and recoveries — see §2's updated cooldown convention. The
+> prescribed 5' is kept only as indicative guidance in the step `name`
+> (`"Retour au calme — ~5' jog léger (ou lap)"`), not an enforced FIT `durationValue`/timer. §3's
+> full JSON, §4's mapping table, and §5/§6's worked examples and limitations text are all updated
+> for this. Step count is unaffected (still 9 for the chosen session — the cooldown was already
+> a single step, only its `duration.type` and `name` change). The `2026-05-19` stress-test session
+> in §6 does not have a separate cooldown of its own in the JSON below (its final segment is the
+> "Retour au métro" repeat group, not a standalone cooldown step) — this revision does not touch it.
 
 ## 2. Proposed structured-step model
 
@@ -151,11 +161,18 @@ structured, whether by hand or by the `drc-publish-session` skill once it author
    forced countdown; it also softens the trailing-recovery FIT limitation described in §6 — with
    the final recovery of a repeat body open instead of timed, the runner reaches the cooldown
    with a single lap-press rather than being held through a full forced timer after the last rep.
-3. **Cooldown: stays a single fixed-time step, never open.** Unlike warmup and recovery, a
-   cooldown functions as the workout's closing marker — a fixed `duration: { type: "time", value:
-   ... }` step is appropriate and unchanged by this revision. Keep it as exactly one step (not
-   split into components) with a `name` that states the duration, e.g. `"Retour au calme — 5' jog
-   léger"`.
+3. **Cooldown: single open (press-lap-to-finish) step, matching warmup and recovery.** Author
+   `{ kind: "cooldown", duration: { type: "open", value: null }, target: null }` as exactly one
+   step (not split into components), with the prescribed time folded into `name` as indicative
+   guidance rather than an enforced `duration: { type: "time", value: ... }`, e.g.
+   `"Retour au calme — ~5' jog léger (ou lap)"`. Rationale: same as the recovery convention above
+   — a runner winding down is a better fit for "press lap when you feel done, informed by the
+   ~5' printed on the step" than a forced countdown, and it keeps the model's three non-work step
+   kinds (warmup, recovery, cooldown) behaviorally consistent — all open, all carrying any
+   prescribed time as text in `name` only. (Earlier revisions of this brief kept the cooldown as a
+   fixed `type:"time"` step, treating it as the workout's closing marker rather than a
+   press-lap block — that distinction has been dropped in this revision in favor of full
+   consistency with warmup/recovery; see the "further revision" note in §1.)
 
 ## 3. The chosen session (`2026-05-05`), fully expressed — G1/G2
 
@@ -187,8 +204,8 @@ structured, whether by hand or by the `drc-publish-session` skill once it author
         ]
       }
     },
-    { "kind": "cooldown", "name": "Retour au calme — 5' jog léger",
-      "duration": { "type": "time", "value": 300 }, "target": null }
+    { "kind": "cooldown", "name": "Retour au calme — ~5' jog léger (ou lap)",
+      "duration": { "type": "open", "value": null }, "target": null }
   ]
 }
 ```
@@ -198,14 +215,16 @@ difference described in §1 — the model expresses it as a one-field diff, not 
 
 This is **9 leaf/control steps** in FIT terms (1 warmup + 6-step repeat body + 1 repeat-control
 message + 1 cooldown), down from the prior revision's 11 (which had a 3-step warmup) — see §5 for
-the recomputed repeat jump-back `messageIndex`.
+the recomputed repeat jump-back `messageIndex`. The cooldown's move from `time`/300s to `open`
+(this revision) does not change the step count — it was already a single step, only its
+`duration.type` and `name` change.
 
 **Nothing is lost** encoding this specific session: every phase (the combined warmup, the 3-part
 repeated block with two recovery granularities, cooldown) maps cleanly. The soft losses are (a)
 "gammes" and "lignes droites" no longer even have their own steps to carry a name individually —
 they're folded into the single warmup step's `name` string, one level more compressed than before
-— and (b) the prescribed recovery times (`2'`, `3'`) are no longer an enforced/displayed
-`durationValue` on the watch, only text in the step `name`; see §6.
+— and (b) the prescribed recovery **and cooldown** times (`2'`, `3'`, `~5'`) are no longer an
+enforced/displayed `durationValue` on the watch, only text in the step `name`; see §6.
 
 ## 4. Mapping (a): DRC text → structured model
 
@@ -217,7 +236,7 @@ they're folded into the single warmup step's `name` string, one level more compr
 | `R = 3' entre les séries` | `{ kind: "recovery", name: "Récup série 3' (ou lap)", duration:{type:"open", value:null}, target:null }` as the **last** step inside the `repeat_group` body (see §6 trailing-recovery note) — TIME-prescribed, so open per §2 |
 | `3 × (...)` | `repeat.count = 3` on the enclosing `repeat_group` |
 | `100m en trottinant` (distance-based recovery, seen in the 2026-05-19 stress test) | `{ kind: "recovery", duration:{type:"distance", value:100}, target:null }` — DISTANCE-prescribed, so **stays** a distance step per §2 (recoveries are not always time-based) |
-| `5' jog léger` | `{ kind: "cooldown", name: "Retour au calme — 5' jog léger", duration:{type:"time", value:300}, target:null }` — always a single timed step per §2, never open |
+| `5' jog léger` | `{ kind: "cooldown", name: "Retour au calme — ~5' jog léger (ou lap)", duration:{type:"open", value:null}, target:null }` — a single open (press-lap-to-finish) step per §2, with the ~5' kept as indicative guidance in `name` only |
 | `100-110% VMA` (explicit range, seen elsewhere in the corpus, e.g. `2026-01-27`) | `target: {type:"vma_pct", pct: null, pct_low:100, pct_high:110}` |
 
 ## 5. Mapping (b): structured model → FIT `workoutStep` messages, with VMA math
@@ -240,10 +259,11 @@ Field/enum values below are taken verbatim from `spike/reference/fit-profile-exc
 | `repeat_group` (the group itself) | one extra `workoutStep` message, placed immediately after the body's last step | `durationType` (1) = `repeatUntilStepsCmplt` (6); `durationValue` (2) = `messageIndex` of the **first** body step; `targetType` (3) = `open` (2); `targetValue` (4) = `repeat.count` |
 
 Note that `duration.type = "open"` and `target = null` compose exactly as the table above already
-states — an open recovery or the open warmup step both encode as `durationType = open (5)` /
-`durationValue` unused, `targetType = open (2)` / target fields unused. Nothing distinguishes an
-open warmup from an open recovery except `intensity` (`warmup` (2) vs `rest` (1) / `recovery`
-(4)) and the `wktStepName` text.
+states — an open recovery, the open warmup step, and (this revision) the open cooldown step all
+encode as `durationType = open (5)` / `durationValue` unused, `targetType = open (2)` / target
+fields unused. Nothing distinguishes an open warmup from an open recovery from an open cooldown
+except `intensity` (`warmup` (2) vs `rest` (1) / `recovery` (4) vs `cooldown` (3)) and the
+`wktStepName` text.
 
 ### Recomputed repeat jump-back `messageIndex` (chosen session, `2026-05-05`)
 
