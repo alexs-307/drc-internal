@@ -64,43 +64,50 @@ sanity-checking the design — but the encoder in this spike targets FIT only.
 
 ### `verify_fit.py` output (committed files, VMA = 16.0 km/h)
 
+Per the design brief's warmup/recovery/cooldown convention revision (§2), the warmup is now a
+single open (press-lap) step and both recovery granularities (`r`/`R`) are open (press-lap) steps
+with the prescribed time kept in the step name — see `.claude/design-briefs/session-structured-steps.md`
+§2/§3/§5 for the full rationale and the recomputed repeat jump-back `messageIndex`.
+
 **G1/G2 (3 series):**
 
 ```
-=== spike/output/progressivite-allure-2026-05-05-g12.fit (736 bytes) ===
-Header: size=14 protocol=0x10 profile_version=2132 data_size=720
+=== spike/output/progressivite-allure-2026-05-05-g12.fit (628 bytes) ===
+Header: size=14 protocol=0x10 profile_version=2132 data_size=612
 Header CRC: OK
 File CRC: OK
 file_id: type=workout manufacturer=255 timeCreated=2026-07-06T12:00:00+00:00
 file_id.type == workout: OK
-workout: sport=running numValidSteps=11 wktName='Progressivité d'allure — Tem'
+workout: sport=running numValidSteps=9 wktName='Progressivité d'allure — Tem'
 workout.numValidSteps matches actual workout_step count: OK
 
-Decoded 11 workout_step message(s):
+Decoded 9 workout_step message(s):
 
 idx  name                     durationType             duration                     targetType target                   intensity
 ---------------------------------------------------------------------------------------------------------------------------------
-  0  Échauffement EF          time                     1200s                        open       open/none                warmup
-  1  Gammes                   time                     900s                         open       open/none                warmup
-  2  2 lignes droites         open                     open                         open       open/none                warmup
-  3  900m à 80% VMA           distance                 900m                         speed      speed 12.42-13.18 km/h   active
-  4  Récup r                  time                     120s                         open       open/none                rest
-  5  600m à 90% VMA           distance                 600m                         speed      speed 13.97-14.83 km/h   active
-  6  Récup r                  time                     120s                         open       open/none                rest
-  7  300m à 100% VMA          distance                 300m                         speed      speed 15.52-16.48 km/h   active
-  8  Récup R (série)          time                     180s                         open       open/none                recovery
-  9                           repeatUntilStepsCmplt    jump back to messageIndex 3  open       repeat count = 3         n/a
- 10  Retour au calme          time                     300s                         open       open/none                cooldown
+  0  Échauffement — 20' EF + gamm open                     open                         open       open/none                warmup
+  1  900m à 80% VMA           distance                 900m                         speed      speed 12.42-13.18 km/h   active
+  2  Récup 2' (ou lap)        open                     open                         open       open/none                rest
+  3  600m à 90% VMA           distance                 600m                         speed      speed 13.97-14.83 km/h   active
+  4  Récup 2' (ou lap)        open                     open                         open       open/none                rest
+  5  300m à 100% VMA          distance                 300m                         speed      speed 15.52-16.48 km/h   active
+  6  Récup série 3' (ou lap)  open                     open                         open       open/none                recovery
+  7                           repeatUntilStepsCmplt    jump back to messageIndex 1  open       repeat count = 3         n/a
+  8  Retour au calme — 5' jog lég time                     300s                         open       open/none                cooldown
 
 RESULT: PASS — header valid, CRC valid, file_id/workout/workout_step present and consistent
 ```
 
-**G3 (2 series)** — identical except step 9 shows `repeat count = 2` (see
-`spike/output/progressivite-allure-2026-05-05-g3.fit`, same command).
+**G3 (2 series)** — identical except step 7 shows `repeat count = 2` (see
+`spike/output/progressivite-allure-2026-05-05-g3.fit`, same command). Confirmed byte-identical to
+the G1/G2 file except for the repeat-count field and the trailing whole-file CRC (3 differing
+bytes total across the 628-byte files).
 
 The workout pace bands above match the design brief's worked example (§5,
 VMA = 16.0 km/h): 80% → 12.42–13.18 km/h, 90% → 13.97–14.83 km/h, 100% →
-15.52–16.48 km/h.
+15.52–16.48 km/h. `wktStepName` values that exceed the 32-byte fixed field (e.g. the warmup step's
+full name, `"Échauffement — 20' EF + gammes + lignes droites"`) are truncated on decode — expected,
+see *Known limitations* below.
 
 ## On-watch test (not run by this spike — Alexandre's test)
 
@@ -112,10 +119,11 @@ VMA = 16.0 km/h): 80% → 12.42–13.18 km/h, 90% → 13.97–14.83 km/h, 100% �
 4. Alternatively, some Garmin Connect mobile app versions support importing a
    `.fit` workout file directly — try this first if USB access isn't
    convenient.
-5. Open the imported workout on the watch and check: 11 steps, correct
+5. Open the imported workout on the watch and check: 9 steps, correct
    warmup/work/recovery/cooldown order, correct repeat count (3 for G1/G2, 2
-   for G3), and pace targets that roughly match the table above for the VMA
-   used.
+   for G3), pace targets that roughly match the table above for the VMA used,
+   and that the warmup step and both recovery steps show as press-lap
+   (open-duration, no countdown) rather than a running timer.
 
 ## What "passed" means
 
@@ -134,11 +142,16 @@ VMA = 16.0 km/h): 80% → 12.42–13.18 km/h, 90% → 13.97–14.83 km/h, 100% �
   UTF-8 multi-byte, so `wktName` for this session truncates to `'Progressivité
   d'allure — Tem'` in the decoded output above — cosmetic only (does not
   affect duration/target/intensity data), but worth knowing before assuming
-  the full session name will show on-device.
+  the full session name will show on-device. The same truncation now also
+  shows up on the (longer) combined warmup step name and the cooldown step
+  name, both visible truncated in the decoded output above.
 - **Trailing recovery after the final repetition** (`R = 3'` after the 3rd/2nd
   series, `Récup bloc` after the 2nd pyramid block in the stress-test
-  session) — a structural FIT limitation, not an encoder bug. See design
-  brief §6.
+  session) — a structural FIT limitation, not an encoder bug. Since this
+  revision, the trailing recovery is open-duration rather than a forced timer
+  (design brief §2), so in practice it costs a single lap-press to skip past
+  rather than a full forced wait — but the extra step still fires; FIT has no
+  "except on the last iteration" step type. See design brief §6.
 - Everything else (nested-repeat flattening, "gammes"/"lignes droites"
   fidelity, band-width choice, hill-grade context) is discussed in the design
   brief, not repeated here.
