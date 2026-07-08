@@ -198,7 +198,9 @@
       return s ? `${m}'${s}"` : `${m}'`;
     }
     if (d.type === "distance") return `${d.value}m`;
-    return "libre";
+    // Open (press-lap-to-advance) — no fixed end condition on the watch. The
+    // step's `name` carries any prescribed-time guidance (see design brief §2).
+    return "au lap";
   }
 
   function targetCells(step, vmaKmh) {

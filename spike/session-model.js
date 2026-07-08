@@ -20,33 +20,28 @@
 
   // Shared warmup + cooldown, identical for G1/G2 and G3 per the source text
   // ("Chauffe identique" / "Retour au calme : 5' jog léger" in both).
+  //
+  // Warmup convention (design brief §2): a multi-component warmup with no
+  // per-component pace target is authored as ONE open (press-lap-to-advance)
+  // step, not split into per-phase timed steps — the DRC text's structure
+  // survives in the step name only.
   function warmupSteps() {
     return [
       {
         kind: "warmup",
-        name: "Échauffement EF",
-        duration: { type: "time", value: 20 * 60 },
-        target: null,
-      },
-      {
-        kind: "warmup",
-        name: "Gammes",
-        duration: { type: "time", value: 15 * 60 },
-        target: null,
-      },
-      {
-        kind: "warmup",
-        name: "2 lignes droites",
+        name: "Échauffement — 20' EF + gammes + lignes droites",
         duration: { type: "open", value: null },
         target: null,
       },
     ];
   }
 
+  // Cooldown convention (design brief §2): always a single fixed-time step,
+  // never open.
   function cooldownStep() {
     return {
       kind: "cooldown",
-      name: "Retour au calme",
+      name: "Retour au calme — 5' jog léger",
       duration: { type: "time", value: 5 * 60 },
       target: null,
     };
@@ -54,6 +49,10 @@
 
   // The repeated 900m/600m/300m sequence with r=2' between runs, R=3' between
   // series. `count` differs between G1/G2 (3) and G3 (2) — see design brief §1.
+  //
+  // Recovery convention (design brief §2): TIME-prescribed recoveries (r, R)
+  // are open (press-lap-to-advance) steps, with the prescribed time folded
+  // into `name` as guidance rather than an enforced FIT durationValue.
   function mainRepeatGroup(count) {
     return {
       kind: "repeat_group",
@@ -71,9 +70,9 @@
           },
           {
             kind: "recovery",
-            name: "Récup r",
+            name: "Récup 2' (ou lap)",
             recoveryLevel: "rep",
-            duration: { type: "time", value: 2 * 60 },
+            duration: { type: "open", value: null },
             target: null,
           },
           {
@@ -84,9 +83,9 @@
           },
           {
             kind: "recovery",
-            name: "Récup r",
+            name: "Récup 2' (ou lap)",
             recoveryLevel: "rep",
-            duration: { type: "time", value: 2 * 60 },
+            duration: { type: "open", value: null },
             target: null,
           },
           {
@@ -97,9 +96,9 @@
           },
           {
             kind: "recovery",
-            name: "Récup R (série)",
+            name: "Récup série 3' (ou lap)",
             recoveryLevel: "block",
-            duration: { type: "time", value: 3 * 60 },
+            duration: { type: "open", value: null },
             target: null,
           },
         ],
