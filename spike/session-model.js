@@ -36,13 +36,15 @@
     ];
   }
 
-  // Cooldown convention (design brief §2): always a single fixed-time step,
-  // never open.
+  // Cooldown convention (design brief §2): a single open (press-lap-to-
+  // finish) step, matching the warmup and recovery convention — the
+  // prescribed 5' is indicative guidance kept in `name` only, not an
+  // enforced FIT durationValue.
   function cooldownStep() {
     return {
       kind: "cooldown",
-      name: "Retour au calme — 5' jog léger",
-      duration: { type: "time", value: 5 * 60 },
+      name: "Retour au calme — ~5' jog léger (ou lap)",
+      duration: { type: "open", value: null },
       target: null,
     };
   }
