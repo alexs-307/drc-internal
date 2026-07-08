@@ -64,10 +64,10 @@ sanity-checking the design — but the encoder in this spike targets FIT only.
 
 ### `verify_fit.py` output (committed files, VMA = 16.0 km/h)
 
-Per the design brief's warmup/recovery/cooldown convention revision (§2), the warmup is now a
-single open (press-lap) step and both recovery granularities (`r`/`R`) are open (press-lap) steps
-with the prescribed time kept in the step name — see `.claude/design-briefs/session-structured-steps.md`
-§2/§3/§5 for the full rationale and the recomputed repeat jump-back `messageIndex`.
+Per the design brief's warmup/recovery/cooldown convention revision (§2), the warmup, both recovery
+granularities (`r`/`R`), and the cooldown are all open (press-lap) steps, each with any prescribed
+time kept only in the step name — see `.claude/design-briefs/session-structured-steps.md` §2/§3/§5
+for the full rationale and the recomputed repeat jump-back `messageIndex`.
 
 **G1/G2 (3 series):**
 
@@ -93,7 +93,7 @@ idx  name                     durationType             duration                 
   5  300m à 100% VMA          distance                 300m                         speed      speed 15.52-16.48 km/h   active
   6  Récup série 3' (ou lap)  open                     open                         open       open/none                recovery
   7                           repeatUntilStepsCmplt    jump back to messageIndex 1  open       repeat count = 3         n/a
-  8  Retour au calme — 5' jog lég time                     300s                         open       open/none                cooldown
+  8  Retour au calme — ~5' jog lé open                     open                         open       open/none                cooldown
 
 RESULT: PASS — header valid, CRC valid, file_id/workout/workout_step present and consistent
 ```
@@ -122,8 +122,9 @@ see *Known limitations* below.
 5. Open the imported workout on the watch and check: 9 steps, correct
    warmup/work/recovery/cooldown order, correct repeat count (3 for G1/G2, 2
    for G3), pace targets that roughly match the table above for the VMA used,
-   and that the warmup step and both recovery steps show as press-lap
-   (open-duration, no countdown) rather than a running timer.
+   and that the warmup step, both recovery steps, and the final cooldown step
+   all show as press-lap (open-duration, no countdown) rather than a running
+   timer.
 
 ## What "passed" means
 
