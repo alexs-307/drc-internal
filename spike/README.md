@@ -72,12 +72,15 @@ for the full rationale and the recomputed repeat jump-back `messageIndex`.
 **G1/G2 (3 series):**
 
 ```
-=== spike/output/progressivite-allure-2026-05-05-g12.fit (628 bytes) ===
-Header: size=14 protocol=0x10 profile_version=2132 data_size=612
+=== spike/output/progressivite-allure-2026-05-05-g12.fit (644 bytes) ===
+Header: size=14 protocol=0x10 profile_version=21208 data_size=628
 Header CRC: OK
 File CRC: OK
-file_id: type=workout manufacturer=255 timeCreated=2026-07-06T12:00:00+00:00
+file_id: type=workout manufacturer=garmin(1) product=connect(65534) serialNumber=1152273600 timeCreated=2026-07-06T12:00:00+00:00
 file_id.type == workout: OK
+file_id.serialNumber is nonzero: OK
+file_creator: softwareVersion=100 hardwareVersion=n/a
+file_creator present: OK
 workout: sport=running numValidSteps=9 wktName='Progressivité d'allure — Tem'
 workout.numValidSteps matches actual workout_step count: OK
 
@@ -101,7 +104,25 @@ RESULT: PASS — header valid, CRC valid, file_id/workout/workout_step present a
 **G3 (2 series)** — identical except step 7 shows `repeat count = 2` (see
 `spike/output/progressivite-allure-2026-05-05-g3.fit`, same command). Confirmed byte-identical to
 the G1/G2 file except for the repeat-count field and the trailing whole-file CRC (3 differing
-bytes total across the 628-byte files).
+bytes total across the 644-byte files).
+
+## Garmin Connect import compatibility
+
+A real Garmin Connect import of an earlier version of this spike's `.fit` output failed with
+"could not be imported". The cause was file-identity, not workout content: the encoder wrote
+`file_id.manufacturer = 255` (`development`), `product = 0`, `serialNumber = 0` (the `uint32z`
+*invalid* sentinel — functionally the same as omitting it), and emitted no `file_creator`
+message at all. Garmin Connect's import validator apparently requires the file to present as
+genuinely Garmin-authored to accept it as a workout: `manufacturer = 1` (`garmin`),
+`product = 65534` (`connect` — the placeholder product ID Connect's own exporter uses), a
+nonzero `serialNumber`, and a `file_creator` message (global mesg 49) present alongside
+`file_id`. The encoder now emits exactly that — see the `verify_fit.py` output above
+(`file_id: ... manufacturer=garmin(1) product=connect(65534) serialNumber=1152273600 ...` and
+`file_creator: softwareVersion=100 hardwareVersion=n/a`) — which is why the file now imports.
+Full provenance and the SDK excerpts this fix relies on are in
+`spike/reference/fit-profile-excerpt.md` (see the "Revision note" callouts under the `fileId`
+and `fileCreator` message sections). Reference VMA for the committed outputs stays 16.0 km/h,
+unchanged by this fix.
 
 The workout pace bands above match the design brief's worked example (§5,
 VMA = 16.0 km/h): 80% → 12.42–13.18 km/h, 90% → 13.97–14.83 km/h, 100% →
@@ -145,7 +166,10 @@ see *Known limitations* below.
   affect duration/target/intensity data), but worth knowing before assuming
   the full session name will show on-device. The same truncation now also
   shows up on the (longer) combined warmup step name and the cooldown step
-  name, both visible truncated in the decoded output above.
+  name, both visible truncated in the decoded output above. Truncation lands
+  on a UTF-8 codepoint boundary (never mid-multibyte-sequence) — the encoder
+  backs off a trailing incomplete multi-byte character rather than emitting a
+  malformed one, so decoded names are always valid UTF-8, just shorter.
 - **Trailing recovery after the final repetition** (`R = 3'` after the 3rd/2nd
   series, `Récup bloc` after the 2nd pyramid block in the stress-test
   session) — a structural FIT limitation, not an encoder bug. Since this

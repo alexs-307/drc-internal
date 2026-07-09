@@ -449,6 +449,25 @@ explicitly in `spike/generate.html`'s preview table column headers.
   is not attempted — an "open" step with a label is the ceiling of fidelity here without inventing
   new step kinds. Flagged as an open decision in §8.
 
+- **File-level requirements for a real Garmin Connect import (not just structural validity).**
+  A `.fit` file can be structurally well-formed — correct header, CRC, and message/field
+  encoding — and still be rejected by Garmin Connect's import with "could not be imported" if
+  its file-identity messages don't look Garmin-authored. This spike hit exactly that: an early
+  version emitted `file_id.manufacturer = development(255)` / `product = 0` /
+  `serialNumber = 0` (the `uint32z` invalid sentinel) and no `file_creator` message at all — all
+  individually spec-legal, but not what Garmin Connect's validator accepts for a workout import.
+  The fix (see `spike/reference/fit-profile-excerpt.md` and `spike/README.md`'s "Garmin Connect
+  import compatibility" section) is: `file_id.manufacturer = garmin(1)`,
+  `file_id.product = connect(65534)`, a genuinely nonzero `serialNumber`, and a `file_creator`
+  message (global mesg 49, `softwareVersion`/`hardwareVersion`) written immediately after
+  `file_id`. **Any future production encoder must inherit this file identity** — it is not
+  optional polish, it is the difference between a file that imports and one that silently
+  doesn't. Separately, fixed-size string fields (`wktName`, `wktStepName`) must truncate on a
+  UTF-8 codepoint boundary rather than a hard byte cut, or a name ending mid-multibyte-sequence
+  (e.g. an accented character split across the 32-byte boundary) will decode as malformed
+  UTF-8 on-device; this spike's encoder now backs off incomplete trailing sequences instead of
+  emitting them.
+
 ## 7. Reference: pattern-variation session (`2026-04-07`, glanced at, not fully modeled)
 
 `Cycle VMA — Variations 300/200` repeats a "300/200/300/200" block four times, but with an
