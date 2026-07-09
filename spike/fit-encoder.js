@@ -1,7 +1,8 @@
 // spike/fit-encoder.js
 //
 // Minimal, dependency-free FIT binary encoder for Garmin *workout* files
-// (file_id + workout + workoutStep messages only — no activity/record data).
+// (file_id + file_creator + workout + workoutStep messages only — no
+// activity/record data).
 // Hand-written against the message/field/enum definitions excerpted verbatim
 // in spike/reference/fit-profile-excerpt.md (source: Garmin FIT JavaScript SDK
 // profile.js, fetched 2026-07-06). Runs unmodified in a browser (loaded via
@@ -75,11 +76,41 @@
     u32(v) {
       this.bytes.push(v & 0xff, (v >> 8) & 0xff, (v >> 16) & 0xff, (v >> 24) & 0xff);
     }
-    // Fixed-size, null-padded/truncated UTF-8 string field.
+    // Fixed-size, null-padded/truncated UTF-8 string field. Truncation lands
+    // on a UTF-8 codepoint boundary, never mid-multibyte-sequence: back off
+    // any dangling continuation bytes (0b10xxxxxx) and drop a lead byte
+    // whose full multibyte sequence would not fit within the field.
     fixedString(str, size) {
       const encoded = utf8Encode(str || "");
+      const maxContentBytes = size - 1; // reserve 1 byte for the null terminator
+      let cut = Math.min(encoded.length, maxContentBytes);
+      // If the first excluded byte is itself a continuation byte, we sliced
+      // inside a multibyte sequence -- back off until we land right after a
+      // complete sequence (or at 0).
+      while (cut > 0 && cut < encoded.length && (encoded[cut] & 0xc0) === 0x80) {
+        cut--;
+      }
+      // The last kept byte (index cut-1) may itself be a lead byte expecting
+      // continuation bytes beyond `cut` -- if the full sequence wouldn't fit,
+      // drop the lead byte too.
+      if (cut > 0) {
+        const last = encoded[cut - 1];
+        let expectedLen = 1;
+        if ((last & 0xe0) === 0xc0) expectedLen = 2;
+        else if ((last & 0xf0) === 0xe0) expectedLen = 3;
+        else if ((last & 0xf8) === 0xf0) expectedLen = 4;
+        if (expectedLen > 1) {
+          let have = 0;
+          while (have < expectedLen - 1 && cut + have < encoded.length && (encoded[cut + have] & 0xc0) === 0x80) {
+            have++;
+          }
+          if (have < expectedLen - 1) {
+            cut--; // incomplete sequence would remain -- drop the lead byte too
+          }
+        }
+      }
       for (let i = 0; i < size; i++) {
-        this.bytes.push(i < encoded.length && i < size - 1 ? encoded[i] : 0);
+        this.bytes.push(i < cut ? encoded[i] : 0);
       }
     }
     raw(byteArray) {
@@ -126,14 +157,26 @@
   // Section 3: message field layouts (mirrors fit-profile-excerpt.md)
   // ---------------------------------------------------------------------
 
-  const GLOBAL_MESG = { FILE_ID: 0, WORKOUT: 26, WORKOUT_STEP: 27 };
+  // file_creator (global mesg 49) is emitted alongside file_id -- Garmin
+  // Connect's own exports always include it, and its absence (along with a
+  // development-manufacturer file_id) is what caused a real Garmin Connect
+  // import to reject this spike's early output. See fit-profile-excerpt.md.
+  const GLOBAL_MESG = { FILE_ID: 0, WORKOUT: 26, WORKOUT_STEP: 27, FILE_CREATOR: 49 };
 
   const WKT_NAME_SIZE = 32; // fixed field size for workout.wktName
   const WKT_STEP_NAME_SIZE = 32; // fixed field size for workoutStep.wktStepName
 
   // Enums (verbatim values, see fit-profile-excerpt.md)
   const FILE_TYPE_WORKOUT = 5;
-  const MANUFACTURER_DEVELOPMENT = 255;
+  // file_id.manufacturer/product: a real Garmin-authored file identifies
+  // itself as manufacturer=garmin(1), product=connect(65534) -- the
+  // placeholder product ID Garmin Connect's own exporter uses for files it
+  // generates itself (as opposed to a real device's numeric product ID).
+  // manufacturer=development(255)/product=0 (this encoder's original values)
+  // is a legitimate FIT identity for ANT+/FIT development tooling, but
+  // Garmin Connect's import validator does not accept it for workout files.
+  const MANUFACTURER_GARMIN = 1;
+  const PRODUCT_GARMIN_CONNECT = 65534;
   const SPORT_RUNNING = 1;
   const WKT_STEP_DURATION = {
     time: 0,
@@ -156,6 +199,11 @@
     { num: 2, name: "product", type: BASE_TYPE.UINT16 },
     { num: 3, name: "serialNumber", type: BASE_TYPE.UINT32Z },
     { num: 4, name: "timeCreated", type: BASE_TYPE.UINT32 },
+  ];
+
+  const FILE_CREATOR_FIELDS = [
+    { num: 0, name: "softwareVersion", type: BASE_TYPE.UINT16 },
+    { num: 1, name: "hardwareVersion", type: BASE_TYPE.UINT8 },
   ];
 
   const WORKOUT_FIELDS = [
@@ -358,24 +406,39 @@
   function encodeWorkoutFit({ name, steps, vmaKmh, generatedAtUnixSeconds }) {
     const stepRecords = flattenSteps(steps, vmaKmh);
 
-    // --- data records (definitions + data), local message types 0/1/2 ---
+    // --- data records (definitions + data), local message types 0/1/2/3 ---
     const data = new ByteWriter();
 
-    // file_id
+    // file_id -- manufacturer=garmin/product=connect (not development/0),
+    // and a real nonzero serialNumber (0 is the uint32z *invalid* sentinel,
+    // functionally the same as omitting it). The serial is derived from the
+    // same fixed generation timestamp used for timeCreated so the output
+    // stays byte-for-byte deterministic across regenerations.
+    const timeCreatedFit = unixSecondsToFitDateTime(
+      generatedAtUnixSeconds != null ? generatedAtUnixSeconds : Math.floor(Date.now() / 1000)
+    );
     writeDefinitionMessage(data, 0, GLOBAL_MESG.FILE_ID, FILE_ID_FIELDS);
     writeDataMessage(data, 0, FILE_ID_FIELDS, {
       type: FILE_TYPE_WORKOUT,
-      manufacturer: MANUFACTURER_DEVELOPMENT,
-      product: 0,
-      serialNumber: 0,
-      timeCreated: unixSecondsToFitDateTime(
-        generatedAtUnixSeconds != null ? generatedAtUnixSeconds : Math.floor(Date.now() / 1000)
-      ),
+      manufacturer: MANUFACTURER_GARMIN,
+      product: PRODUCT_GARMIN_CONNECT,
+      serialNumber: timeCreatedFit,
+      timeCreated: timeCreatedFit,
+    });
+
+    // file_creator -- required alongside file_id for Garmin Connect's import
+    // validator to recognize the file as Garmin-authored. softwareVersion is
+    // an arbitrary spike version stamp ("1.00"); hardwareVersion is left
+    // invalid/unset since this is not physical device firmware.
+    writeDefinitionMessage(data, 1, GLOBAL_MESG.FILE_CREATOR, FILE_CREATOR_FIELDS);
+    writeDataMessage(data, 1, FILE_CREATOR_FIELDS, {
+      softwareVersion: 100,
+      hardwareVersion: BASE_TYPE.UINT8.invalid,
     });
 
     // workout
-    writeDefinitionMessage(data, 1, GLOBAL_MESG.WORKOUT, WORKOUT_FIELDS);
-    writeDataMessage(data, 1, WORKOUT_FIELDS, {
+    writeDefinitionMessage(data, 2, GLOBAL_MESG.WORKOUT, WORKOUT_FIELDS);
+    writeDataMessage(data, 2, WORKOUT_FIELDS, {
       sport: SPORT_RUNNING,
       capabilities: 0,
       numValidSteps: stepRecords.length,
@@ -384,9 +447,9 @@
 
     // workoutStep (one definition, N data records — fixed-size fields only,
     // so a single definition message covers every record)
-    writeDefinitionMessage(data, 2, GLOBAL_MESG.WORKOUT_STEP, WORKOUT_STEP_FIELDS);
+    writeDefinitionMessage(data, 3, GLOBAL_MESG.WORKOUT_STEP, WORKOUT_STEP_FIELDS);
     for (const rec of stepRecords) {
-      writeDataMessage(data, 2, WORKOUT_STEP_FIELDS, rec);
+      writeDataMessage(data, 3, WORKOUT_STEP_FIELDS, rec);
     }
 
     const dataBytes = data.toUint8Array();
@@ -395,7 +458,9 @@
     const header = new ByteWriter();
     header.u8(14); // header size
     header.u8(0x10); // protocol version 1.0 (upper nibble major, lower nibble minor)
-    header.u16(2132); // profile version (informational; not strictly validated on import)
+    // Profile version — matches the SDK version documented in
+    // spike/reference/fit-profile-excerpt.md (21.208.0Release -> 21208).
+    header.u16(21208);
     header.u32(dataBytes.length); // size of the data records section only
     header.raw(utf8Encode(".FIT")); // 4-byte data type tag
     const headerBytesSoFar = header.toUint8Array();

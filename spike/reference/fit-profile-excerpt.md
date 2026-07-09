@@ -85,9 +85,59 @@ Source: `Profile.messages[0]`, lines ~27-167 of `profile.js`.
 },
 ```
 
-Fields used by the spike encoder: `type` (=5, `workout`), `manufacturer` (=255, `development`),
-`timeCreated` (FIT epoch `dateTime`, uint32 seconds since 1989-12-31T00:00:00Z UTC).
-`product` / `serialNumber` are written as 0 (not required for import).
+Fields used by the spike encoder: `type` (=5, `workout`), `manufacturer` (=1, `garmin`),
+`product` (=65534, `connect`), `serialNumber` (nonzero, derived from the fixed generation
+timestamp — see below), `timeCreated` (FIT epoch `dateTime`, uint32 seconds since
+1989-12-31T00:00:00Z UTC).
+
+> **Revision note (real Garmin Connect import fix):** the spike originally wrote
+> `manufacturer` = 255 (`development`), `product` = 0, and `serialNumber` = 0. That combination
+> is a legitimate FIT identity for ANT+/FIT development tooling, but a real Garmin Connect
+> import of a file with those values plus no `file_creator` message failed with "could not be
+> imported". Garmin Connect's own workout exports identify as `manufacturer` = 1 (`garmin`),
+> `product` = 65534 (`connect` — the placeholder product ID Connect's own exporter uses for
+> files it generates itself, as opposed to a real device's numeric product ID), a nonzero
+> `serialNumber`, and always include a `file_creator` message (see below). This encoder now
+> matches that identity. `serialNumber` is `uint32z` (0 = invalid/unset, same as omitting the
+> field), so a real import needs it nonzero; this encoder reuses the same fixed generation
+> timestamp already used for `timeCreated` so the value stays deterministic.
+
+---
+
+## Message: `fileCreator` (global mesg num 49)
+
+Source: `Profile.messages[49]`, line ~169 of `profile.js` (fields excerpt below, trimmed of
+`array`/`scale`/`offset`/`units`/`bits`/`components` metadata not used by this spike's encoder,
+same trimming applied to the other message excerpts in this file).
+
+```js
+49: {
+    num: 49,
+    name: "fileCreator",
+    messagesKey: "fileCreatorMesgs",
+    fields: {
+    0: {
+        num: 0,
+        name: "softwareVersion",
+        type: "uint16",
+        baseType: "uint16",
+    },
+    1: {
+        num: 1,
+        name: "hardwareVersion",
+        type: "uint8",
+        baseType: "uint8",
+    },
+},
+```
+
+**Revision note (real Garmin Connect import fix):** the spike's original encoder emitted no
+`fileCreator` message at all. Real Garmin-authored FIT workout files always include one
+immediately after `file_id`; its absence (combined with the `manufacturer`/`product`/
+`serialNumber` values described above) is what caused a real Garmin Connect import to reject
+this spike's output. Fields used by the spike encoder: `softwareVersion` (arbitrary spike
+version stamp, written as `100` i.e. "1.00"), `hardwareVersion` (left at its `uint8` invalid
+sentinel `0xff` — this is not physical device firmware).
 
 ---
 
@@ -300,11 +350,36 @@ Used value: `5` → `workout`.
 
 ## Enum: `manufacturer` (used for `fileId.manufacturer`)
 
-Source: `Profile.types.manufacturer` (excerpt, single relevant entry).
+Source: `Profile.types.manufacturer`, line ~24402 (excerpt, relevant entries only).
 
 ```js
-255: "development",
+manufacturer: {
+    1: "garmin",
+    ...
+    255: "development",
+    ...
+},
 ```
+
+Used value: `1` → `garmin` (see the revision note under the `fileId` message above; `255`
+(`development`) was the encoder's original, since-replaced value).
+
+## Enum: `garminProduct` (used for `fileId.product` when `manufacturer` = `garmin`)
+
+Source: `Profile.types.garminProduct`, line ~24647 (excerpt, single relevant entry — this is a
+very large enum of every historical Garmin device model; only the entry this spike writes is
+reproduced).
+
+```js
+garminProduct: {
+    ...
+    65534: "connect", // Garmin Connect website
+    ...
+},
+```
+
+Used value: `65534` → `connect` — the placeholder product ID Garmin Connect's own exporter
+writes into FIT files it generates itself (as opposed to a real device's numeric product ID).
 
 ## Enum: `sport` (used for `workout.sport`)
 
