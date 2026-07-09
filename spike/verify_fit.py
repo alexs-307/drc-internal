@@ -14,8 +14,10 @@ Usage:
     python3 spike/verify_fit.py spike/output/progressivite-allure-2026-05-05-g3.fit
 
 Exits non-zero (and prints a FAIL line) if the header is malformed, either
-CRC fails, no file_id/workout/workoutStep messages are found, or the
-file_id.type is not "workout".
+CRC fails, no file_id/file_creator/workout/workoutStep messages are found,
+the file_id.type is not "workout", or the file_id.serialNumber is 0/unset
+(the real-Garmin-Connect-import requirements documented in
+spike/reference/fit-profile-excerpt.md).
 """
 
 import struct
@@ -130,8 +132,16 @@ FILE_ID_FIELD_NAMES = {
     3: "serialNumber",
     4: "timeCreated",
 }
+FILE_CREATOR_FIELD_NAMES = {
+    0: "softwareVersion",
+    1: "hardwareVersion",
+}
 
-GLOBAL_MESG_NAMES = {0: "file_id", 26: "workout", 27: "workout_step"}
+# manufacturer/product enum names, see spike/reference/fit-profile-excerpt.md
+MANUFACTURER_NAMES = {1: "garmin", 255: "development"}
+GARMIN_PRODUCT_NAMES = {65534: "connect"}
+
+GLOBAL_MESG_NAMES = {0: "file_id", 26: "workout", 27: "workout_step", 49: "file_creator"}
 
 
 class FitParseError(Exception):
@@ -326,6 +336,7 @@ def main():
         sys.exit(1)
 
     file_id_msgs = [v for g, v in messages if g == 0]
+    file_creator_msgs = [v for g, v in messages if g == 49]
     workout_msgs = [v for g, v in messages if g == 26]
     workout_step_msgs = [v for g, v in messages if g == 27]
 
@@ -337,14 +348,45 @@ def main():
         file_type = fid.get(0)
         file_type_name = FILE_TYPE_NAMES.get(file_type, f"#{file_type}")
         manufacturer = fid.get(1)
+        manufacturer_name = MANUFACTURER_NAMES.get(manufacturer, f"#{manufacturer}")
+        product = fid.get(2)
+        product_name = GARMIN_PRODUCT_NAMES.get(product, f"#{product}") if manufacturer == 1 else f"#{product}"
+        serial_number = fid.get(3)
         time_created = fid.get(4)
         created_str = fit_datetime_to_utc(time_created).isoformat() if time_created is not None else "n/a"
-        print(f"file_id: type={file_type_name} manufacturer={manufacturer} timeCreated={created_str}")
+        print(
+            f"file_id: type={file_type_name} manufacturer={manufacturer_name}({manufacturer}) "
+            f"product={product_name}({product}) serialNumber={serial_number} timeCreated={created_str}"
+        )
         if file_type_name != "workout":
             print(f"FAIL: file_id.type is '{file_type_name}', expected 'workout'")
             ok = False
         else:
             print("file_id.type == workout: OK")
+        if not serial_number:
+            print(
+                "FAIL: file_id.serialNumber is 0/unset (uint32z invalid sentinel) — "
+                "real Garmin Connect imports require a nonzero serial number"
+            )
+            ok = False
+        else:
+            print("file_id.serialNumber is nonzero: OK")
+
+    if not file_creator_msgs:
+        print(
+            "FAIL: no file_creator message found — real Garmin Connect imports require one "
+            "alongside file_id"
+        )
+        ok = False
+    else:
+        creator = file_creator_msgs[0]
+        software_version = creator.get(0)
+        hardware_version = creator.get(1)
+        print(
+            f"file_creator: softwareVersion={software_version} "
+            f"hardwareVersion={'n/a' if hardware_version is None else hardware_version}"
+        )
+        print("file_creator present: OK")
 
     if not workout_msgs:
         print("FAIL: no workout message found")
