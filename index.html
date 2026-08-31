@@ -1681,6 +1681,11 @@
   #auth-state-signedin .auth-member-email-line {
     animation: signedin-fade 350ms ease-out 80ms both;
   }
+  /* No real first name: collapse the name line entirely so "On drifte ?"
+     stands alone with no orphaned blank line above it. */
+  #auth-state-signedin .line-1[hidden] {
+    display: none;
+  }
   #auth-state-signedin #auth-signout-btn {
     animation: signedin-fade 350ms ease-out 80ms both;
   }
@@ -2861,13 +2866,23 @@ function startResendLockdown() {
 function showSignedInState(firstName, email) {
   const nameEl  = getAuthEl('auth-member-name');
   const emailEl = getAuthEl('auth-member-email');
-  // Display name is the first name (uppercase rendering handled by CSS); fall back
-  // to "MEMBRE" when no real first name is set (placeholder/empty case).
-  const displayName = firstName ? firstName : 'MEMBRE';
-  if (nameEl)  nameEl.textContent  = displayName;
+  // Display name is the first name (uppercase rendering handled by CSS). When
+  // there's no real first name (placeholder/empty case), drop the name line
+  // entirely rather than showing a "MEMBRE" placeholder — "On drifte ?" (line-2,
+  // always in the HTML) stands alone. Re-show it whenever a real name comes back
+  // on a later render, since this function runs for every signed-in render.
+  if (firstName) {
+    if (nameEl) {
+      nameEl.textContent = firstName;
+      nameEl.hidden = false;
+    }
+  } else if (nameEl) {
+    nameEl.textContent = '';
+    nameEl.hidden = true;
+  }
   if (emailEl) emailEl.textContent = email || '';
-  // Tagline is constant ("On drifte ?"), already in the HTML.
-  showAuthState('auth-state-signedin', `${displayName}. On drifte ?`);
+  const announcement = firstName ? `${firstName}. On drifte ?` : 'On drifte ?';
+  showAuthState('auth-state-signedin', announcement);
 }
 
 // initAuth() is now called directly from the module script at the bottom of the
