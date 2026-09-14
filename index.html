@@ -110,36 +110,6 @@
     letter-spacing: 0.12em;
     text-transform: uppercase;
   }
-  .next-session-card {
-    margin-left: auto;
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-    padding: 6px 12px;
-    border: 1.5px solid var(--blue);
-    border-radius: 4px;
-    text-decoration: none;
-    color: inherit;
-    transition: background 0.15s;
-  }
-  .next-session-card:hover { background: var(--blue-faint); text-decoration: none; }
-  .next-session-card[hidden] { display: none; }
-  .next-session-label {
-    font-family: var(--font-mono);
-    font-size: 9px;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.14em;
-    color: var(--graphite);
-  }
-  .next-session-value {
-    font-family: var(--font-mono);
-    font-size: 11px;
-    font-weight: 600;
-    color: var(--blue);
-    letter-spacing: 0.04em;
-  }
-
   /* ===== NAV TABS (V2) ===== */
   nav {
     background: var(--white);
@@ -173,6 +143,41 @@
   .tab-btn svg { width: 20px; height: 20px; flex-shrink: 0; }
   .tab-btn:hover:not(.active) { opacity: 0.6; }
   .tab-btn.active {
+    color: var(--blue);
+    border-bottom-color: var(--blue);
+  }
+
+  /* ===== SEASON TABS (Entraînement tab) =====
+     Same underline-tab idiom as the main nav above, one step down in scale:
+     flat text, no fill, no icons. Horizontal-scroll-on-overflow instead of a
+     media-query breakpoint, since it degrades the same way at any width. */
+  .season-tabs {
+    display: flex;
+    gap: 20px;
+    margin: 0 0 24px;
+    border-bottom: 1px solid var(--border);
+    overflow-x: auto;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+  }
+  .season-tabs::-webkit-scrollbar { display: none; }
+  .season-tab {
+    background: transparent;
+    border: none;
+    border-bottom: 2px solid transparent;
+    padding: 0 0 8px;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--graphite);
+    cursor: pointer;
+    letter-spacing: 0.08em;
+    white-space: nowrap;
+    flex-shrink: 0;
+    transition: color 0.15s, border-color 0.15s, opacity 0.15s;
+  }
+  .season-tab:hover:not(.active) { opacity: 0.7; }
+  .season-tab.active {
     color: var(--blue);
     border-bottom-color: var(--blue);
   }
@@ -573,6 +578,23 @@
     transition: box-shadow 0.15s;
   }
   .session-item:hover { box-shadow: var(--shadow); }
+  .session-item.next-up { border-left: 4px solid var(--blue); }
+  /* Compensate the 3px added by the border above so pinned-card content
+     aligns with unpinned cards (base padding 18px - border delta 3px = 15px). */
+  .session-item.next-up .session-header,
+  .session-item.next-up .session-body { padding-left: 15px; }
+  .session-next-badge {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    padding: 3px 8px;
+    border-radius: 4px;
+    background: var(--blue);
+    color: var(--white);
+    flex-shrink: 0;
+  }
   .session-header {
     display: flex;
     align-items: center;
@@ -667,6 +689,12 @@
       margin-top: 4px;
       width: 100%;
     }
+  }
+  @media (max-width: 640px) {
+    /* Below 640px there's no room for the badge without crushing the
+       label and venue; the blue left border and the card's pinned
+       position already identify the next session. */
+    .session-next-badge { display: none; }
   }
   .sessions-count {
     font-size: 0.8rem;
@@ -1438,7 +1466,6 @@
     .wordmark-top { font-size: 22px; }
     .wordmark-bot { font-size: 11px; }
     .header-badge { display: none; }
-    .next-session-card { display: none !important; }
 
     nav {
       padding: 0 16px;
@@ -1750,10 +1777,6 @@
     <div class="wordmark-top">Dérapage</div>
     <div class="wordmark-bot">Running Club</div>
   </div>
-  <a class="next-session-card" id="next-session-card" href="#sessions" hidden>
-    <span class="next-session-label">Prochaine séance</span>
-    <span class="next-session-value" id="next-session-value">—</span>
-  </a>
   <span class="header-badge">Interne</span>
 </header>
 
@@ -1981,7 +2004,9 @@
       <span class="line-1">Entraînement</span>
       <span class="line-2">le journal</span>
     </h1>
-    <p class="page-sub">Historique des séances depuis la reprise d'août 2025 · La plus récente en premier.</p>
+    <p class="page-sub">Historique des séances, une saison à la fois · La plus récente en premier.</p>
+
+    <div class="season-tabs" id="season-tabs"></div>
 
     <!-- VMA Calculator -->
     <div class="vma-bar">
@@ -1999,7 +2024,7 @@
 
     <div class="search-bar">
       <span class="search-icon">🔍</span>
-      <input type="text" id="session-search" placeholder="Rechercher une séance (ex: VMA, seuil, 400m, Vincennes…)" oninput="filterSessions()">
+      <input type="text" id="session-search" placeholder="Rechercher une séance (ex: VMA, seuil, 400m, Vincennes…)" oninput="applyFilters()">
     </div>
     <div class="sessions-count" id="sessions-count"></div>
     <div id="sessions-list"></div>
@@ -2376,6 +2401,7 @@ document.addEventListener('supabase-ready', renderRaces);
 // SESSION DATA — fetched from Supabase
 // ===================================================================
 let sessions = [];
+let activeSeason = null;
 
 async function loadSessions() {
   const { data, error } = await window.supabase
@@ -2392,58 +2418,133 @@ async function loadSessions() {
   sessions = data;
   const saved = localStorage.getItem('drc_vma');
   if (saved) updateVMASummary(parseFloat(saved));
-  renderSessions(sessions);
-  renderNextSession(sessions[0]);
+  renderSeasonTabs();
+  applyFilters();
+}
+
+// ===================================================================
+// SEASON SELECTOR
+// ===================================================================
+
+// Distinct `season` values present in the loaded data, newest first.
+// Lexical sort works because the label format ('YYYY-YYYY') sorts the same
+// as chronological order. Returns [] if the DB hasn't been migrated yet
+// (no row carries a `season` value) — the degradation path below hides the
+// selector entirely in that case rather than re-deriving it from `date`.
+function deriveSeasons(list) {
+  const set = new Set(list.map(s => s.season).filter(Boolean));
+  return Array.from(set).sort().reverse();
+}
+
+function renderSeasonTabs() {
+  const container = document.getElementById('season-tabs');
+  const seasons = deriveSeasons(sessions);
+
+  if (seasons.length === 0) {
+    // No session carries a `season` value yet (migration 0006 not applied) —
+    // hide the selector and let applyFilters() fall back to the unfiltered list.
+    activeSeason = null;
+    container.style.display = 'none';
+    container.innerHTML = '';
+    return;
+  }
+
+  if (!activeSeason || !seasons.includes(activeSeason)) {
+    activeSeason = seasons[0]; // newest season is the default
+  }
+
+  container.style.display = '';
+  container.innerHTML = '';
+  // Tab row is only built for the current 2-season reality. If the season
+  // count grows past ~4-5, switch this to a compact dropdown-style control
+  // per the design brief, rather than letting the row wrap or overflow.
+  seasons.forEach(season => {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'season-tab' + (season === activeSeason ? ' active' : '');
+    btn.textContent = season;
+    btn.addEventListener('click', () => {
+      if (activeSeason === season) return;
+      activeSeason = season;
+      renderSeasonTabs();
+      applyFilters();
+    });
+    container.appendChild(btn);
+  });
+}
+
+// Chronologically nearest session with date >= today within `list`. Mirrors
+// the "find the next upcoming thing" idiom in renderRaces(), adapted for the
+// fact that `sessions` loads newest-first (descending) rather than ascending
+// — so this scans for the minimum qualifying date instead of taking the
+// first match in order.
+function findNextSession(list) {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  let next = null;
+  let nextDate = null; // cache the incumbent's parsed date instead of re-parsing it every comparison
+  for (const s of list) {
+    const d = new Date(s.date + 'T00:00:00');
+    if (d >= today && (!next || d < nextDate)) { next = s; nextDate = d; }
+  }
+  return next;
+}
+
+// Single source of truth for the sessions list shown on screen: composes the
+// active season with the search query, then renders the result. Every
+// trigger (season tab click, search input, VMA change) calls this instead
+// of independently re-filtering, so the two filters can never drift apart.
+function applyFilters() {
+  const seasonScoped = activeSeason
+    ? sessions.filter(s => s.season === activeSeason)
+    : sessions; // no season data available — unfiltered list, degraded mode
+
+  const q = document.getElementById('session-search').value.toLowerCase().trim();
+  const filtered = q
+    ? seasonScoped.filter(s =>
+        (s.label + s.g12 + (s.g3 || '') + (s.suggestion || '') + s.venue + s.date)
+          .toLowerCase().includes(q))
+    : seasonScoped;
+
+  let emptyMessage = 'Aucune séance ne correspond à votre recherche.';
+  if (activeSeason) {
+    // The "no sessions at all" case is defensive: seasons are derived from
+    // the sessions actually loaded, so every rendered tab necessarily has
+    // at least one. Kept anyway per the design brief, and for future-proofing
+    // if a season tab is ever created before any session is inserted into it.
+    emptyMessage = seasonScoped.length === 0
+      ? 'Aucune séance enregistrée pour cette saison.'
+      : `Aucune séance ne correspond à votre recherche pour la saison ${activeSeason}.`;
+  }
+
+  // The next-upcoming session is computed against the season-scoped set (not
+  // the search-filtered one) so it stays stable while the user types. It's
+  // only pinned to the top if it also survives the search filter — otherwise
+  // the search results render normally, with nothing forced to the top.
+  const nextSession = findNextSession(seasonScoped);
+  const pinned = nextSession && filtered.includes(nextSession) ? nextSession : null;
+  const ordered = pinned ? [pinned, ...filtered.filter(s => s !== pinned)] : filtered;
+
+  renderSessions(ordered, emptyMessage, pinned);
 }
 
 document.addEventListener('supabase-ready', loadSessions);
 // ===================================================================
 // RENDER SESSIONS
 // ===================================================================
-function shortVenue(v) {
-  if (!v) return '';
-  if (/vincennes/i.test(v)) return 'Vincennes';
-  // Initial. + last word : "Bertrand Dauvin" -> "B. Dauvin"
-  const parts = v.trim().split(/\s+/);
-  if (parts.length >= 2) return parts[0][0] + '. ' + parts.slice(1).join(' ');
-  return v;
-}
-
-function formatNextDate(dateStr) {
-  const d = new Date(dateStr + 'T12:00:00');
-  const day = d.toLocaleDateString('fr-FR', { weekday: 'short' }).replace('.', '');
-  const num = d.getDate();
-  const mon = d.toLocaleDateString('fr-FR', { month: 'short' }).replace('.', '');
-  // Capitalize first letter of weekday
-  return `${day.charAt(0).toUpperCase()}${day.slice(1)} ${num} ${mon}`;
-}
-
-function renderNextSession(s) {
-  const card = document.getElementById('next-session-card');
-  const val = document.getElementById('next-session-value');
-  if (!card || !val || !s) return;
-  val.textContent = `${formatNextDate(s.date).toUpperCase()} · ${shortVenue(s.venue)}`;
-  card.hidden = false;
-  card.addEventListener('click', (e) => {
-    e.preventDefault();
-    activateTab('sessions');
-    history.replaceState(null, '', '#sessions');
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  });
-}
-
 function formatDate(dateStr) {
   const d = new Date(dateStr + 'T12:00:00');
   const opts = { day: '2-digit', month: 'short', year: 'numeric' };
   return d.toLocaleDateString('fr-FR', opts);
 }
-function renderSessions(list) {
+function renderSessions(list, emptyMessage, pinnedSession) {
   const container = document.getElementById('sessions-list');
   const countEl = document.getElementById('sessions-count');
   const noRes = document.getElementById('no-results');
   container.innerHTML = '';
 
   if (list.length === 0) {
+    noRes.textContent = emptyMessage || 'Aucune séance ne correspond à votre recherche.';
     noRes.style.display = 'block';
     countEl.textContent = '';
     return;
@@ -2455,8 +2556,9 @@ function renderSessions(list) {
   const vma = parseFloat(document.getElementById('vma-input').value) || null;
 
   list.forEach((s, i) => {
+    const isNextUp = !!pinnedSession && s === pinnedSession;
     const item = document.createElement('div');
-    item.className = 'session-item';
+    item.className = 'session-item' + (isNextUp ? ' next-up' : '');
 
     const g12ann = annotateVMA(s.g12, vma);
     const g3ann  = s.g3 ? annotateVMA(s.g3, vma) : null;
@@ -2536,9 +2638,12 @@ function renderSessions(list) {
         </div>`;
     }
 
+    const nextBadge = isNextUp ? '<span class="session-next-badge">Prochaine</span>' : '';
+
     item.innerHTML = `
       <div class="session-header" onclick="toggleSession(this)">
         <span class="session-date-badge">${formatDate(s.date)}</span>
+        ${nextBadge}
         <span class="session-label">${s.label}</span>
         <span class="session-venue">📍 ${s.venue}</span>
         <span class="session-chevron">▼</span>
@@ -2570,19 +2675,6 @@ function toggleSplits(evt, btn) {
   // Prevent the click from reaching the session-header's toggleSession handler
   // (the button is inside session-body so it won't naturally bubble there,
   // but guard explicitly against any future DOM restructuring)
-}
-
-function filterSessions() {
-  const q = document.getElementById('session-search').value.toLowerCase().trim();
-  if (!q) {
-    renderSessions(sessions);
-    return;
-  }
-  const filtered = sessions.filter(s =>
-    (s.label + s.g12 + (s.g3 || '') + (s.suggestion || '') + s.venue + s.date)
-      .toLowerCase().includes(q)
-  );
-  renderSessions(filtered);
 }
 
 // ===================================================================
@@ -3026,11 +3118,7 @@ function onVMAChange() {
   const vma = parseFloat(document.getElementById('vma-input').value);
   localStorage.setItem('drc_vma', isNaN(vma) ? '' : vma);
   updateVMASummary(isNaN(vma) ? null : vma);
-  const q = document.getElementById('session-search').value.toLowerCase().trim();
-  const list = q
-    ? sessions.filter(s => (s.label + s.g12 + (s.g3||'') + (s.venue||'')).toLowerCase().includes(q))
-    : sessions;
-  renderSessions(list);
+  applyFilters();
 }
 
 // Restore saved VMA on load
