@@ -110,36 +110,6 @@
     letter-spacing: 0.12em;
     text-transform: uppercase;
   }
-  .next-session-card {
-    margin-left: auto;
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-    padding: 6px 12px;
-    border: 1.5px solid var(--blue);
-    border-radius: 4px;
-    text-decoration: none;
-    color: inherit;
-    transition: background 0.15s;
-  }
-  .next-session-card:hover { background: var(--blue-faint); text-decoration: none; }
-  .next-session-card[hidden] { display: none; }
-  .next-session-label {
-    font-family: var(--font-mono);
-    font-size: 9px;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.14em;
-    color: var(--graphite);
-  }
-  .next-session-value {
-    font-family: var(--font-mono);
-    font-size: 11px;
-    font-weight: 600;
-    color: var(--blue);
-    letter-spacing: 0.04em;
-  }
-
   /* ===== NAV TABS (V2) ===== */
   nav {
     background: var(--white);
@@ -608,6 +578,23 @@
     transition: box-shadow 0.15s;
   }
   .session-item:hover { box-shadow: var(--shadow); }
+  .session-item.next-up { border-left: 4px solid var(--blue); }
+  /* Compensate the 3px added by the border above so pinned-card content
+     aligns with unpinned cards (base padding 18px - border delta 3px = 15px). */
+  .session-item.next-up .session-header,
+  .session-item.next-up .session-body { padding-left: 15px; }
+  .session-next-badge {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    padding: 3px 8px;
+    border-radius: 4px;
+    background: var(--blue);
+    color: var(--white);
+    flex-shrink: 0;
+  }
   .session-header {
     display: flex;
     align-items: center;
@@ -702,6 +689,12 @@
       margin-top: 4px;
       width: 100%;
     }
+  }
+  @media (max-width: 640px) {
+    /* Below 640px there's no room for the badge without crushing the
+       label and venue; the blue left border and the card's pinned
+       position already identify the next session. */
+    .session-next-badge { display: none; }
   }
   .sessions-count {
     font-size: 0.8rem;
@@ -1473,7 +1466,6 @@
     .wordmark-top { font-size: 22px; }
     .wordmark-bot { font-size: 11px; }
     .header-badge { display: none; }
-    .next-session-card { display: none !important; }
 
     nav {
       padding: 0 16px;
@@ -1785,10 +1777,6 @@
     <div class="wordmark-top">Dérapage</div>
     <div class="wordmark-bot">Running Club</div>
   </div>
-  <a class="next-session-card" id="next-session-card" href="#sessions" hidden>
-    <span class="next-session-label">Prochaine séance</span>
-    <span class="next-session-value" id="next-session-value">—</span>
-  </a>
   <span class="header-badge">Interne</span>
 </header>
 
@@ -2432,7 +2420,6 @@ async function loadSessions() {
   if (saved) updateVMASummary(parseFloat(saved));
   renderSeasonTabs();
   applyFilters();
-  renderNextSession(sessions[0]);
 }
 
 // ===================================================================
@@ -2486,6 +2473,23 @@ function renderSeasonTabs() {
   });
 }
 
+// Chronologically nearest session with date >= today within `list`. Mirrors
+// the "find the next upcoming thing" idiom in renderRaces(), adapted for the
+// fact that `sessions` loads newest-first (descending) rather than ascending
+// — so this scans for the minimum qualifying date instead of taking the
+// first match in order.
+function findNextSession(list) {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  let next = null;
+  let nextDate = null; // cache the incumbent's parsed date instead of re-parsing it every comparison
+  for (const s of list) {
+    const d = new Date(s.date + 'T00:00:00');
+    if (d >= today && (!next || d < nextDate)) { next = s; nextDate = d; }
+  }
+  return next;
+}
+
 // Single source of truth for the sessions list shown on screen: composes the
 // active season with the search query, then renders the result. Every
 // trigger (season tab click, search input, VMA change) calls this instead
@@ -2513,51 +2517,27 @@ function applyFilters() {
       : `Aucune séance ne correspond à votre recherche pour la saison ${activeSeason}.`;
   }
 
-  renderSessions(filtered, emptyMessage);
+  // The next-upcoming session is computed against the season-scoped set (not
+  // the search-filtered one) so it stays stable while the user types. It's
+  // only pinned to the top if it also survives the search filter — otherwise
+  // the search results render normally, with nothing forced to the top.
+  const nextSession = findNextSession(seasonScoped);
+  const pinned = nextSession && filtered.includes(nextSession) ? nextSession : null;
+  const ordered = pinned ? [pinned, ...filtered.filter(s => s !== pinned)] : filtered;
+
+  renderSessions(ordered, emptyMessage, pinned);
 }
 
 document.addEventListener('supabase-ready', loadSessions);
 // ===================================================================
 // RENDER SESSIONS
 // ===================================================================
-function shortVenue(v) {
-  if (!v) return '';
-  if (/vincennes/i.test(v)) return 'Vincennes';
-  // Initial. + last word : "Bertrand Dauvin" -> "B. Dauvin"
-  const parts = v.trim().split(/\s+/);
-  if (parts.length >= 2) return parts[0][0] + '. ' + parts.slice(1).join(' ');
-  return v;
-}
-
-function formatNextDate(dateStr) {
-  const d = new Date(dateStr + 'T12:00:00');
-  const day = d.toLocaleDateString('fr-FR', { weekday: 'short' }).replace('.', '');
-  const num = d.getDate();
-  const mon = d.toLocaleDateString('fr-FR', { month: 'short' }).replace('.', '');
-  // Capitalize first letter of weekday
-  return `${day.charAt(0).toUpperCase()}${day.slice(1)} ${num} ${mon}`;
-}
-
-function renderNextSession(s) {
-  const card = document.getElementById('next-session-card');
-  const val = document.getElementById('next-session-value');
-  if (!card || !val || !s) return;
-  val.textContent = `${formatNextDate(s.date).toUpperCase()} · ${shortVenue(s.venue)}`;
-  card.hidden = false;
-  card.addEventListener('click', (e) => {
-    e.preventDefault();
-    activateTab('sessions');
-    history.replaceState(null, '', '#sessions');
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  });
-}
-
 function formatDate(dateStr) {
   const d = new Date(dateStr + 'T12:00:00');
   const opts = { day: '2-digit', month: 'short', year: 'numeric' };
   return d.toLocaleDateString('fr-FR', opts);
 }
-function renderSessions(list, emptyMessage) {
+function renderSessions(list, emptyMessage, pinnedSession) {
   const container = document.getElementById('sessions-list');
   const countEl = document.getElementById('sessions-count');
   const noRes = document.getElementById('no-results');
@@ -2576,8 +2556,9 @@ function renderSessions(list, emptyMessage) {
   const vma = parseFloat(document.getElementById('vma-input').value) || null;
 
   list.forEach((s, i) => {
+    const isNextUp = !!pinnedSession && s === pinnedSession;
     const item = document.createElement('div');
-    item.className = 'session-item';
+    item.className = 'session-item' + (isNextUp ? ' next-up' : '');
 
     const g12ann = annotateVMA(s.g12, vma);
     const g3ann  = s.g3 ? annotateVMA(s.g3, vma) : null;
@@ -2657,9 +2638,12 @@ function renderSessions(list, emptyMessage) {
         </div>`;
     }
 
+    const nextBadge = isNextUp ? '<span class="session-next-badge">Prochaine</span>' : '';
+
     item.innerHTML = `
       <div class="session-header" onclick="toggleSession(this)">
         <span class="session-date-badge">${formatDate(s.date)}</span>
+        ${nextBadge}
         <span class="session-label">${s.label}</span>
         <span class="session-venue">📍 ${s.venue}</span>
         <span class="session-chevron">▼</span>
