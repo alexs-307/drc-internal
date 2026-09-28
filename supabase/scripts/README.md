@@ -40,6 +40,11 @@ Set permissions to `600` so only your user can read it:
 chmod 600 .env
 ```
 
+`.env` can also hold `SUPABASE_ACCESS_TOKEN` (used by `site_usage.sh`, see below)
+and `DRC_EXCLUDE_EMAIL`. **Every line in `.env` must be `export NAME=value`, with
+no spaces around `=`** — a stray space around `=` silently broke `source .env`
+in practice, so don't add spaces even though some shells tolerate them.
+
 **To load it into your shell (from the `drc-internal/` repo root):**
 
 ```bash
@@ -300,6 +305,77 @@ Per-member API failure (batch continues; script exits 1 at the end):
 - **stderr** contains validation and hard error diagnostics.
 - The secret key is never printed, and the `Authorization` header is never
   echoed.
+
+---
+
+## `site_usage.sh`
+
+Read-only usage analytics for the website — API-only, never writes to the
+database. Two parts:
+
+- **Part 1 — Auth Admin API** (`GET $SUPABASE_URL/auth/v1/admin/users`, needs
+  only `SUPABASE_SECRET_KEY`): account counts, how many were admin-invited,
+  how many ever signed in, and a "last seen" snapshot.
+- **Part 2 — Supabase Management API** (`POST
+  https://api.supabase.com/v1/projects/{ref}/database/query`, needs
+  `SUPABASE_ACCESS_TOKEN`): SQL over `auth.refresh_tokens` / `auth.sessions` /
+  `auth.audit_log_entries` — history coverage, weekly active users, a season
+  summary (average weekly actives over full weeks only), and per-member
+  active days. **Skipped gracefully** (prints a note, exits `0`) if
+  `SUPABASE_ACCESS_TOKEN` is not set — Part 1 still runs.
+
+### Data source caveats
+
+- `auth.audit_log_entries` is empty for this project (DB audit logging is
+  off), so history comes from `auth.refresh_tokens` instead. Its revoked
+  rows are retained back to launch (May 2026), so it works as a full
+  history even though it isn't an audit log.
+- A refresh token is minted roughly once per page open, after the ~1h
+  access token expires — so one refresh token ≈ one visit. Repeat visits
+  inside the same hour collapse into a single token and are undercounted.
+- The season summary's `avg_weekly_active_users` averages only over weeks
+  that had at least one active user — a week with zero activity isn't a
+  row in that average (it would silently pull the average down rather than
+  being a real "nobody visited" signal you'd want called out separately).
+
+### Usage
+
+```bash
+bash supabase/scripts/site_usage.sh [YYYY-MM-DD]   # default since 2026-09-01
+```
+
+The script sources `drc-internal/.env` itself (resolved relative to its own
+location) — you don't need to `source .env` first. `YYYY-MM-DD` must match
+that exact shape; anything else is rejected before any API call is made.
+
+### Required env
+
+| Var | Notes |
+|---|---|
+| `SUPABASE_URL` | project URL |
+| `SUPABASE_SECRET_KEY` | service-role key (Admin API) |
+
+### Optional env
+
+| Var | Notes |
+|---|---|
+| `SUPABASE_ACCESS_TOKEN` | Supabase **Personal Access Token**. Create one at [supabase.com/dashboard/account/tokens](https://supabase.com/dashboard/account/tokens), scoped to this project with the narrowest read-only DB query permission available and a short expiry. Lives in `.env`, never committed. Revoke it once you're done with the analytics session. Without it, Part 2 is skipped. |
+| `DRC_EXCLUDE_EMAIL` | An account email to exclude from all counts (e.g. the admin's own test account). When unset, nobody is excluded and the output header says so. Must not contain quotes, backslashes, or whitespace (rejected before any API call — it's interpolated into a SQL literal). Never a real address in committed examples — use `you@example.com`-style placeholders. |
+
+### Privacy
+
+The output includes **member names and per-member activity** (Part 2's
+per-user active-days section). Treat it like any other member data export:
+don't paste it into shared channels, tickets, or anywhere outside your own
+terminal/notes.
+
+### Exit codes
+
+| Code | Meaning |
+|------|---------|
+| `0` | Success (Part 2 included or gracefully skipped) |
+| `1` | An API call failed (network error or non-2xx HTTP response) |
+| `2` | Usage / environment error (missing `.env`, missing required var, invalid `YYYY-MM-DD` argument, or invalid `DRC_EXCLUDE_EMAIL`) |
 
 ---
 
