@@ -6,6 +6,8 @@
 #   GET $SUPABASE_URL/auth/v1/admin/users → who has an account, who ever
 #   signed in, and a "last seen" snapshot (max of last_sign_in_at and
 #   updated_at — updated_at moves with session activity; see caveats below).
+#   Never-signed-in accounts are excluded from the snapshot because
+#   updated_at is set at account creation.
 #
 # Part 2 (needs a Personal Access Token, skipped gracefully if absent):
 #   Management API — POST https://api.supabase.com/v1/projects/{ref}/database/query
@@ -144,13 +146,13 @@ jq -r --arg me "$EXCLUDE_EMAIL" --arg since "$SINCE" --arg invited_since "$INVIT
   [.users[] | select($me == "" or .email != $me)
    | { invited: (.created_at >= $invited_since),
        signed_in: (.last_sign_in_at != null),
-       seen: ([.last_sign_in_at // "", .updated_at] | max) }] as $u
+       seen: (if .last_sign_in_at == null then "" else ([.last_sign_in_at, .updated_at] | max) end) }] as $u
   | ($u | map(select(.invited))) as $inv
   | "accounts:                   \($u|length)",
     "invited (admin-created):    \($inv|length)",
     "invited, signed in >= once: \($inv|map(select(.signed_in))|length) (\(if ($inv|length)==0 then 0 else (($inv|map(select(.signed_in))|length) * 100 / ($inv|length) | floor) end)%)",
     "all, signed in >= once:     \($u|map(select(.signed_in))|length) (\(if ($u|length)==0 then 0 else (($u|map(select(.signed_in))|length) * 100 / ($u|length) | floor) end)%)",
-    "last seen >= \($since):     \($u|map(select(.seen >= $since))|length)  (floor — snapshot, not history)"
+    "last seen >= \($since):     \($u|map(select(.seen != "" and .seen >= $since))|length)  (floor — snapshot, not history)"
 ' <<<"$users_json"
 
 # ---------------------------------------------------------------------------
