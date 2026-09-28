@@ -315,7 +315,9 @@ database. Two parts:
 
 - **Part 1 — Auth Admin API** (`GET $SUPABASE_URL/auth/v1/admin/users`, needs
   only `SUPABASE_SECRET_KEY`): account counts, how many were admin-invited,
-  how many ever signed in, and a "last seen" snapshot.
+  how many ever signed in, and a "last seen" snapshot (never-signed-in
+  accounts are excluded from it because `updated_at` is set at account
+  creation).
 - **Part 2 — Supabase Management API** (`POST
   https://api.supabase.com/v1/projects/{ref}/database/query`, needs
   `SUPABASE_ACCESS_TOKEN`): SQL over `auth.refresh_tokens` / `auth.sessions` /
