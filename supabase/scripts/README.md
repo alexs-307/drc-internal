@@ -333,13 +333,20 @@ database. Two parts:
 - A refresh token is minted roughly once per page open, after the ~1h
   access token expires — so one refresh token ≈ one visit. Repeat visits
   inside the same hour collapse into a single token and are undercounted.
+- The season summary's `avg_weekly_active_users` averages only over weeks
+  that had at least one active user — a week with zero activity isn't a
+  row in that average (it would silently pull the average down rather than
+  being a real "nobody visited" signal you'd want called out separately).
 
 ### Usage
 
 ```bash
-source .env
 bash supabase/scripts/site_usage.sh [YYYY-MM-DD]   # default since 2026-09-01
 ```
+
+The script sources `drc-internal/.env` itself (resolved relative to its own
+location) — you don't need to `source .env` first. `YYYY-MM-DD` must match
+that exact shape; anything else is rejected before any API call is made.
 
 ### Required env
 
@@ -353,7 +360,7 @@ bash supabase/scripts/site_usage.sh [YYYY-MM-DD]   # default since 2026-09-01
 | Var | Notes |
 |---|---|
 | `SUPABASE_ACCESS_TOKEN` | Supabase **Personal Access Token**. Create one at [supabase.com/dashboard/account/tokens](https://supabase.com/dashboard/account/tokens), scoped to this project with the narrowest read-only DB query permission available and a short expiry. Lives in `.env`, never committed. Revoke it once you're done with the analytics session. Without it, Part 2 is skipped. |
-| `DRC_EXCLUDE_EMAIL` | An account email to exclude from all counts (e.g. the admin's own test account). When unset, nobody is excluded and the output header says so. Never a real address in committed examples — use `you@example.com`-style placeholders. |
+| `DRC_EXCLUDE_EMAIL` | An account email to exclude from all counts (e.g. the admin's own test account). When unset, nobody is excluded and the output header says so. Must not contain quotes, backslashes, or whitespace (rejected before any API call — it's interpolated into a SQL literal). Never a real address in committed examples — use `you@example.com`-style placeholders. |
 
 ### Privacy
 
@@ -368,7 +375,7 @@ terminal/notes.
 |------|---------|
 | `0` | Success (Part 2 included or gracefully skipped) |
 | `1` | An API call failed (network error or non-2xx HTTP response) |
-| `2` | Usage / environment error (missing `.env`, missing required var) |
+| `2` | Usage / environment error (missing `.env`, missing required var, invalid `YYYY-MM-DD` argument, or invalid `DRC_EXCLUDE_EMAIL`) |
 
 ---
 

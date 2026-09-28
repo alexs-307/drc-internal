@@ -48,13 +48,23 @@
 # Exit codes:
 #   0  Success (Part 2 sections included or skipped, both are success)
 #   1  An API call failed (network error or non-2xx HTTP response)
-#   2  Usage / environment error (missing .env, missing required var)
+#   2  Usage / environment error (missing .env, missing required var,
+#      invalid SINCE argument, or invalid DRC_EXCLUDE_EMAIL)
 #
 # Dependencies: curl (ships with macOS), jq (brew install jq)
 
 set -euo pipefail
 
 SINCE="${1:-2026-09-01}"
+
+# SINCE is interpolated directly into SQL literals sent to a privileged
+# endpoint (Management API) below — validate its shape before it touches
+# any query string.
+if [[ ! "$SINCE" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ ]]; then
+  echo "error: date argument must be YYYY-MM-DD (got: $SINCE)" >&2
+  exit 2
+fi
+
 PROJECT_REF="zglyzryhckxbwsivlotu"   # matches the project referenced by SUPABASE_URL
 
 # Project-specific cutoff: accounts created on/after this date are treated as
@@ -89,6 +99,13 @@ if [[ -z "${SUPABASE_SECRET_KEY:-}" ]]; then
 fi
 
 EXCLUDE_EMAIL="${DRC_EXCLUDE_EMAIL:-}"
+
+# EXCLUDE_EMAIL is also interpolated into a SQL literal below — reject
+# anything that could break out of the quoted string before it gets there.
+if [[ -n "$EXCLUDE_EMAIL" && "$EXCLUDE_EMAIL" =~ [\'\\[:space:]] ]]; then
+  echo "error: DRC_EXCLUDE_EMAIL must not contain quotes, backslashes, or whitespace" >&2
+  exit 2
+fi
 
 # ---------------------------------------------------------------------------
 # HTTP helper: surfaces curl/HTTP failures instead of letting `set -e` exit
@@ -131,8 +148,8 @@ jq -r --arg me "$EXCLUDE_EMAIL" --arg since "$SINCE" --arg invited_since "$INVIT
   | ($u | map(select(.invited))) as $inv
   | "accounts:                   \($u|length)",
     "invited (admin-created):    \($inv|length)",
-    "invited, signed in >= once: \($inv|map(select(.signed_in))|length) (\(($inv|map(select(.signed_in))|length) * 100 / ($inv|length) | floor)%)",
-    "all, signed in >= once:     \($u|map(select(.signed_in))|length) (\(($u|map(select(.signed_in))|length) * 100 / ($u|length) | floor)%)",
+    "invited, signed in >= once: \($inv|map(select(.signed_in))|length) (\(if ($inv|length)==0 then 0 else (($inv|map(select(.signed_in))|length) * 100 / ($inv|length) | floor) end)%)",
+    "all, signed in >= once:     \($u|map(select(.signed_in))|length) (\(if ($u|length)==0 then 0 else (($u|map(select(.signed_in))|length) * 100 / ($u|length) | floor) end)%)",
     "last seen >= \($since):     \($u|map(select(.seen >= $since))|length)  (floor — snapshot, not history)"
 ' <<<"$users_json"
 
@@ -173,11 +190,11 @@ with me as (select id from auth.users where email = '$EXCLUDE_EMAIL'),
 ev as (
   select (payload->>'actor_id')::uuid as user_id, created_at
   from auth.audit_log_entries
-  where payload->>'action' in ('login', 'token_refreshed') and created_at >= '$SINCE'
+  where payload->>'action' in ('login', 'token_refreshed') and created_at >= ('$SINCE'::timestamp at time zone 'Europe/Paris')
   union all
-  select user_id, created_at from auth.sessions where created_at >= '$SINCE'
+  select user_id, created_at from auth.sessions where created_at >= ('$SINCE'::timestamp at time zone 'Europe/Paris')
   union all
-  select user_id::uuid, created_at from auth.refresh_tokens where created_at >= '$SINCE'
+  select user_id::uuid, created_at from auth.refresh_tokens where created_at >= ('$SINCE'::timestamp at time zone 'Europe/Paris')
 ),
 ev2 as (
   select user_id, (created_at at time zone 'Europe/Paris') as ts
@@ -197,7 +214,9 @@ echo "== Season summary since $SINCE"
 run_sql "Management API (season summary)" "$EVENTS_CTE,
 weekly as (
   select date_trunc('week', ts)::date as wk, count(distinct user_id) as wau
-  from ev2 where ts < date_trunc('week', now() at time zone 'Europe/Paris')  -- full weeks only
+  from ev2
+  where ts < date_trunc('week', now() at time zone 'Europe/Paris')  -- full weeks only: drop the current, still-open week
+    and ts >= date_trunc('week', '$SINCE'::date + 6)                -- ...and drop a partial first week if SINCE isn't a Monday
   group by 1)
 select (select count(distinct user_id) from ev2) as distinct_users_since,
        (select round(avg(wau), 1) from weekly) as avg_weekly_active_users,
