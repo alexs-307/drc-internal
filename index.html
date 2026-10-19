@@ -3009,8 +3009,80 @@ const VENUE_TRACK_LENGTHS = {
 
 // Shared regex pattern strings — used by both annotateVMA and extractPassageData.
 // Using String.raw to avoid double-escaping backslashes.
+
+// Canonical form: the pace follows the distance directly.
+//   "400m à 100% VMA", "400 m à 100-110% VMA"
 const VMA_DIST_PATTERN  = String.raw`(\d+)\s*m\s*à\s*(\d+)(?:\s*[-–]\s*(\d+))?\s*%\s*VMA`;
 const VMA_TIMED_PATTERN = String.raw`(\d+)'\s*(?:à|allure)\s*(\d+)(?:\s*[-–]\s*(\d+))?\s*%\s*VMA`;
+
+// Annotated form: the pace sits in a parenthesis after the distance — optionally
+// behind a short label — and may list several percentages. The coach writes reps
+// this way whenever one rep carries more than one target pace:
+//   "4 × 500m (2 à 90% + 2 à 95% VMA)"   -> 90-95%
+//   "2 × 500m (90-95% VMA)"              -> 90-95%
+//   "3 à 4 × 900m à SV1 (80-85% VMA)"    -> 80-85%
+// The canonical pattern cannot see these because the text right after the
+// distance is "(" or a label, not "à <n>%".
+//
+// Safety: the parenthesis must belong to the distance it is bound to, so the
+// bridge between them is capped at 16 chars and may not contain
+//   - a newline, which would reach a rep on another line;
+//   - a "(" or ")", which would reach past a nearer parenthesis or leak a
+//     stray bracket into the label, as in "3 × (1500m + 500m) (85-95% VMA)";
+//   - another distance, written "<n>m", "<n>km" or "<n>M", which is what makes
+//     the binding unambiguous: in "Récup 100m / 2 × 1000m (90% VMA)" or
+//     "2 × 800m + 4 × 400m (95% VMA)" the pace belongs to the LAST distance
+//     before the parenthesis, never to an earlier one. Without this guard the
+//     warm-up and recovery distances that appear in nearly every session
+//     ("2 lignes droites de 100m", "Récup 100m marche") bind to a percentage
+//     belonging to another rep.
+//     KNOWN RESIDUAL: a bare-"k" distance in the bridge is not caught, so
+//     "4 × 1000m puis 2k (85% VMA)" still binds the 1000m. Bare "k" cannot be
+//     added here, because "allure 10k" is a pace LABEL, not a distance, and it
+//     occurs in the bridge of a real rep ("600m allure 10k (~90% VMA)");
+//     nothing local tells the two apart. Closing it properly means replacing
+//     this generic bridge with a whitelist of the label shapes that actually
+//     occur ("à SV1", "allure semi", "allure 10k", "en alterné");
+//   - "<" or ">", so a badge already injected by one of the patterns above
+//     cannot be re-read as source text. Pattern 2's badge ends in "~1530m",
+//     which would otherwise bind to a following parenthesis.
+// The guard is a lookahead, not a lookbehind: Safari below 16.4 throws a
+// SyntaxError when a lookbehind is constructed, which would blank the page.
+const VMA_DIST_PAREN_PATTERN = String.raw`(\d+)\s*m\b(?:(?!\d+\s*(?:[kK][mM]|[mM])\b)[^\n()<>]){0,16}\(([^()\n<>]*?\d+\s*%[^()\n<>]*?VMA)\)`;
+
+// Percentages inside an annotated parenthesis: "90%", "90-95%".
+const VMA_PCT_PATTERN = String.raw`(\d+)(?:\s*[-–]\s*(\d+))?\s*%`;
+
+// Every target pace an annotated parenthesis states, in the order written.
+// The distinction that matters is between a RANGE and an ENUMERATION:
+//   "90-95% VMA"            -> [92.5]   one target expressed as a band, so the
+//                                       mid-point is the honest single figure —
+//                                       the same way the canonical pattern
+//                                       already averages "à 90-95% VMA"
+//   "2 à 90% + 2 à 95% VMA" -> [90, 95] TWO targets: two reps at 90% and two at
+//                                       95%. Averaging these to 92.5% would
+//                                       describe a session nobody runs, so each
+//                                       is reported on its own.
+//   "~90% VMA"              -> [90]
+// Returns [] when there is no pace to report:
+//   - the parenthesis holds no percentage at all, or
+//   - it spells out its own sub-reps with distances, as in
+//     "1000m (500m à 85% VMA / 500m à 90-95% VMA)" or
+//     "4 × 1500m en alterné (300m Semi 80-85% / 300m 10k 90-95% VMA)".
+//     Those are covered rep by rep by the canonical pattern, and a progressive
+//     rep has no one pace, so inventing a figure would be wrong rather than
+//     coarse.
+function pctsFromParen(paceText) {
+  if (/\d+\s*m\b/.test(paceText)) return [];
+  const pcts = [];
+  const re = new RegExp(VMA_PCT_PATTERN, 'g');
+  let m;
+  while ((m = re.exec(paceText)) !== null) {
+    pcts.push(m[2] ? (parseInt(m[1]) + parseInt(m[2])) / 2 : parseInt(m[1]));
+  }
+  // Distinct values only — "2 à 90% + 2 à 90%" states one target twice.
+  return [...new Set(pcts)];
+}
 
 function annotateVMA(text, vma) {
   if (!vma || vma <= 0) return text;
@@ -3019,6 +3091,7 @@ function annotateVMA(text, vma) {
   text = text.replace(
     new RegExp(VMA_DIST_PATTERN, 'g'),
     (match, dist, pct1, pct2) => {
+      if (!parseInt(dist)) return match; // "1 000m" captures "000" — no badge
       const pct = pct2 ? (parseInt(pct1) + parseInt(pct2)) / 2 : parseInt(pct1);
       const speedMs = vma * pct / 100 / 3.6;
       const secs = parseInt(dist) / speedMs;
@@ -3037,6 +3110,25 @@ function annotateVMA(text, vma) {
     }
   );
 
+  // Pattern 3 — distance rep whose pace is annotated in a parenthesis:
+  // "500m (2 à 90% + 2 à 95% VMA)", "900m à SV1 (80-85% VMA)".
+  // Runs last; the badges the patterns above just injected are out of reach
+  // because the bridge forbids "<" and ">".
+  text = text.replace(
+    new RegExp(VMA_DIST_PAREN_PATTERN, 'g'),
+    (match, dist, paceText) => {
+      if (!parseInt(dist)) return match; // "1 000m" captures "000" — no badge
+      const pcts = pctsFromParen(paceText);
+      if (!pcts.length) return match;
+      // One time per target pace: "2 à 90% + 2 à 95% VMA" gets both, since a
+      // single averaged figure would be a pace neither rep is run at.
+      const times = pcts.map(pct =>
+        formatSecs(parseInt(dist) / (vma * pct / 100 / 3.6))
+      );
+      return `${match}<span class="vma-hint">${times.join(' · ')}</span>`;
+    }
+  );
+
   return text;
 }
 
@@ -3049,30 +3141,66 @@ function extractPassageData(s, vma) {
   if (!lapLength) return [];
 
   const groups = [];
-  const seen = new Set(); // deduplicate identical rep descriptions across text blocks
+  const seen = new Set(); // deduplicate equivalent reps across text blocks
+
+  // Emit one landmark group for a distance rep. Keyed on distance + pace rather
+  // than on the matched text, so the same rep written two ways — canonical in one
+  // block, annotated in another, or repeated across g12/g3 — yields a single group.
+  function pushDistGroup(label, repDist, pct) {
+    // repDist can be 0 when a thousands separator splits the number:
+    // "1 000m" captures "000". Nothing useful to show for a 0m rep.
+    if (!repDist) return;
+    if (repDist <= lapLength) return; // not longer than one lap — no landmarks
+    const key = `d:${repDist}:${pct}`;
+    if (seen.has(key)) return;
+    seen.add(key);
+    const speedMs = vma * pct / 100 / 3.6;
+    const lapCount = Math.floor(repDist / lapLength);
+    const landmarks = [];
+    for (let i = 1; i <= lapCount; i++) {
+      const landmarkM = i * lapLength;
+      landmarks.push({ distance: landmarkM, time: formatSecs(landmarkM / speedMs) });
+    }
+    groups.push({ label, estimated: false, landmarks });
+  }
 
   const blocks = [s.g12, s.g3, s.suggestion].filter(Boolean);
 
   blocks.forEach(block => {
-    // Distance reps
+    let m; // shared by the three exec loops below
+
+    // Distance reps — canonical form: "500m à 90% VMA"
     const reD = new RegExp(VMA_DIST_PATTERN, 'g');
-    let m;
     while ((m = reD.exec(block)) !== null) {
       const [match, dist, pct1, pct2] = m;
-      const key = 'd:' + match;
-      if (seen.has(key)) continue;
-      seen.add(key);
-      const repDist = parseInt(dist);
-      if (repDist <= lapLength) continue; // not longer than one lap — no landmarks
       const pct = pct2 ? (parseInt(pct1) + parseInt(pct2)) / 2 : parseInt(pct1);
-      const speedMs = vma * pct / 100 / 3.6;
-      const lapCount = Math.floor(repDist / lapLength);
-      const landmarks = [];
-      for (let i = 1; i <= lapCount; i++) {
-        const landmarkM = i * lapLength;
-        landmarks.push({ distance: landmarkM, time: formatSecs(landmarkM / speedMs) });
-      }
-      groups.push({ label: match.trim(), estimated: false, landmarks });
+      pushDistGroup(match.trim(), parseInt(dist), pct);
+    }
+
+    // Distance reps — annotated form: "500m (2 à 90% + 2 à 95% VMA)"
+    // A match that is itself canonical ("800m à 95% VMA (90-95% VMA)") is left
+    // to the loop above, which has already emitted it at the pace that comes
+    // first. annotateVMA gets this for free — its Pattern 1 runs earlier and
+    // breaks the trailing "VMA" with a badge — but this loop reads raw text,
+    // so without the check one rep would show up as two rows at two paces.
+    const reP = new RegExp(VMA_DIST_PAREN_PATTERN, 'g');
+    const reCanonical = new RegExp(VMA_DIST_PATTERN);
+    while ((m = reP.exec(block)) !== null) {
+      const [match, dist, paceText] = m;
+      if (reCanonical.test(match)) continue;
+      const pcts = pctsFromParen(paceText);
+      if (!pcts.length) continue;
+      const repDist = parseInt(dist);
+      // One row per target pace. When the parenthesis enumerates several
+      // ("2 à 90% + 2 à 95% VMA"), the raw text labels neither row usefully, so
+      // each gets a label naming its own pace; a single target keeps the text
+      // as written, which carries context a synthetic label would lose
+      // ("900m à SV1 (80-85% VMA)").
+      pcts.forEach(pct => pushDistGroup(
+        pcts.length > 1 ? `${repDist}m à ${pct}% VMA` : match.trim(),
+        repDist,
+        pct
+      ));
     }
 
     // Timed blocks

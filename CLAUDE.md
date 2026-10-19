@@ -203,11 +203,17 @@ Located at the top of the Entrainement tab. Lets each member enter their own VMA
   - `3' à 90% VMA` → appends an **orange badge** with the estimated distance (e.g. `~702m`)
 - Annotation is non-destructive: the raw session strings are never mutated.
 
-**Regex patterns used:**
-- Distance: `/(\d+)\s*m\s*à\s*(\d+)(?:\s*[-–]\s*(\d+))?\s*%\s*VMA/g`
-- Timed block: `/(\d+)'\s*(?:à|allure)\s*(\d+)(?:\s*[-–]\s*(\d+))?\s*%\s*VMA/g`
+**Regex patterns used** (declared once as `VMA_*_PATTERN` string constants in `index.html`, shared by `annotateVMA` and `extractPassageData`):
+- Distance — pace follows the distance directly (`400m à 100% VMA`): `(\d+)\s*m\s*à\s*(\d+)(?:\s*[-–]\s*(\d+))?\s*%\s*VMA`
+- Timed block (`3' à 90% VMA`, `6' allure 90% VMA`): `(\d+)'\s*(?:à|allure)\s*(\d+)(?:\s*[-–]\s*(\d+))?\s*%\s*VMA`
+- Distance — pace annotated in a parenthesis (`500m (2 à 90% + 2 à 95% VMA)`, `1500m allure semi (80-85% VMA)`): `(\d+)\s*m\b(?:(?!\d+\s*(?:[kK][mM]|[mM])\b)[^\n()<>]){0,16}\(([^()\n<>]*?\d+\s*%[^()\n<>]*?VMA)\)` — the parenthesis is resolved to its list of target paces by `pctsFromParen()`
 
-If new session content uses a different phrasing for VMA percentages, extend these patterns.
+If new session content uses a different phrasing for VMA percentages, extend these patterns. Three standing constraints when you do:
+
+- **A range is not an enumeration.** `(90-95% VMA)` is one target written as a band — a mid-point is the honest single figure. `(2 à 90% + 2 à 95% VMA)` is *two* targets: two reps at 90% and two at 95%. Averaging the second to 92.5% invents a pace nobody runs, so each target gets its own badge and its own row in the passage panel.
+
+- **No lookbehind.** Safari below 16.4 throws a `SyntaxError` the moment a lookbehind is *constructed*, which blanks the whole page. Lookahead is fine.
+- **A pace must bind to the right rep.** Session text is freehand and nearly every session mixes real reps with warm-up and recovery distances (`2 lignes droites de 100m`, `Récup 100m marche`). The annotated-parenthesis pattern above handles this with a bounded bridge that forbids newlines, brackets, `<`/`>`, and any intervening `<n>m` / `<n>km` / `<n>M` distance — so `Récup 100m / 2 × 1000m (90% VMA)` binds 1000m, not 100m. One residual is known and deliberate: a bare-`k` distance in the bridge is not caught (`4 × 1000m puis 2k (85% VMA)` binds the 1000m), because `allure 10k` is a pace *label* that occurs in the bridge of a real rep and nothing local distinguishes the two. Any new pattern needs an equivalent argument, checked against the real corpus (`DRC/sessions.json`, 59 sessions) for both new matches **and** regressions.
 
 ---
 
